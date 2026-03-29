@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id          String              @id @default(cuid())
+  slug        String              @unique
+  name        String
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  memberships TenantMembership[]
+  commands    Command[]
+  users       TenantUser[]
+}
+
+model AppUser {
+  id          String              @id @default(cuid())
+  subject     String              @unique
+  email       String?
+  displayName String?
+  createdAt   DateTime            @default(now())
+  memberships TenantMembership[]
+}
+
+model TenantMembership {
+  id        String   @id @default(cuid())
+  tenantId  String
+  userId    String
+  role      String
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId])
+  @@index([tenantId])
+  @@index([userId])
+}
+
+model TenantUser {
+  id                   String   @id @default(cuid())
+  tenantId             String
+  platform             String
+  platformUserId       String?
+  username             String?
+  displayName          String?
+  avatarLink           String?
+  subscriberBadgeLink  String?
+  roleBadgeLink        String?
+  specialtyBadgeLink   String?
+  lastActivity         DateTime?
+  lastUpdated          DateTime?
+  onlineViewingMinutes Int      @default(0)
+  customTitle          String?
+  isSpecialtyExcluded  Boolean  @default(false)
+  notes                String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, platform, platformUserId])
+  @@index([tenantId, username])
+  @@index([tenantId, displayName])
+}
+
+model Command {
+  id         String   @id @default(cuid())
+  tenantId   String
+  name       String
+  type       String
+  isEnabled  Boolean  @default(true)
+  unlocked   Boolean  @default(true)
+  groupName  String?
+  definition Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, name])
+  @@index([tenantId, isEnabled])
+}
