@@ -1,0 +1,14 @@
+steps:
+  - name: node:22
+    entrypoint: bash
+    args:
+      - -lc
+      - |
+        corepack enable
+        pnpm install --frozen-lockfile
+        pnpm lint
+        pnpm typecheck
+        pnpm test
+        pnpm build
+options:
+  logging: CLOUD_LOGGING_ONLY
