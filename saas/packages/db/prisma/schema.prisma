@@ -7,6 +7,8 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ─── Core Tenancy ───────────────────────────────────────────────────────────
+
 model Tenant {
   id          String              @id @default(cuid())
   slug        String              @unique
@@ -16,6 +18,12 @@ model Tenant {
   memberships TenantMembership[]
   commands    Command[]
   users       TenantUser[]
+  counters    Counter[]
+  currencies  Currency[]
+  inventories Inventory[]
+  connections IntegrationConnection[]
+  webhooks    Webhook[]
+  auditEvents AuditEvent[]
 }
 
 model AppUser {
@@ -34,7 +42,7 @@ model TenantMembership {
   role      String
   createdAt DateTime @default(now())
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   user   AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, userId])
@@ -42,8 +50,10 @@ model TenantMembership {
   @@index([userId])
 }
 
+// ─── Platform Users ─────────────────────────────────────────────────────────
+
 model TenantUser {
-  id                   String   @id @default(cuid())
+  id                   String    @id @default(cuid())
   tenantId             String
   platform             String
   platformUserId       String?
@@ -55,12 +65,12 @@ model TenantUser {
   specialtyBadgeLink   String?
   lastActivity         DateTime?
   lastUpdated          DateTime?
-  onlineViewingMinutes Int      @default(0)
+  onlineViewingMinutes Int       @default(0)
   customTitle          String?
-  isSpecialtyExcluded  Boolean  @default(false)
+  isSpecialtyExcluded  Boolean   @default(false)
   notes                String?
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -68,6 +78,8 @@ model TenantUser {
   @@index([tenantId, username])
   @@index([tenantId, displayName])
 }
+
+// ─── Commands ───────────────────────────────────────────────────────────────
 
 model Command {
   id         String   @id @default(cuid())
@@ -85,4 +97,181 @@ model Command {
 
   @@index([tenantId, name])
   @@index([tenantId, isEnabled])
+}
+
+// ─── Counters ───────────────────────────────────────────────────────────────
+
+model Counter {
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String
+  amount      Int      @default(0)
+  resetAmount Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+}
+
+// ─── Currency + Ledger ──────────────────────────────────────────────────────
+
+model Currency {
+  id              String   @id @default(cuid())
+  tenantId        String
+  name            String
+  acquireAmount   Int      @default(1)
+  acquireInterval Int      @default(60)
+  maxAmount       Int      @default(0)
+  isEnabled       Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant  Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  ledgers CurrencyLedger[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+}
+
+model CurrencyLedger {
+  id         String   @id @default(cuid())
+  currencyId String
+  userId     String
+  amount     Int      @default(0)
+  updatedAt  DateTime @updatedAt
+
+  currency Currency @relation(fields: [currencyId], references: [id], onDelete: Cascade)
+
+  @@unique([currencyId, userId])
+  @@index([currencyId])
+  @@index([userId])
+}
+
+// ─── Inventory + Items + Ledger ─────────────────────────────────────────────
+
+model Inventory {
+  id               String   @id @default(cuid())
+  tenantId         String
+  name             String
+  defaultMaxAmount Int      @default(-1)
+  shopEnabled      Boolean  @default(false)
+  shopCurrencyId   String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  tenant Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  items  InventoryItem[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+}
+
+model InventoryItem {
+  id            String   @id @default(cuid())
+  inventoryId   String
+  name          String
+  maxAmount     Int      @default(-1)
+  shopBuyPrice  Int      @default(0)
+  shopSellPrice Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  inventory Inventory        @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+  ledgers   InventoryLedger[]
+
+  @@unique([inventoryId, name])
+  @@index([inventoryId])
+}
+
+model InventoryLedger {
+  id        String   @id @default(cuid())
+  itemId    String
+  userId    String
+  amount    Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  item InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([itemId, userId])
+  @@index([itemId])
+  @@index([userId])
+}
+
+// ─── Integration Connections ────────────────────────────────────────────────
+
+model IntegrationConnection {
+  id           String   @id @default(cuid())
+  tenantId     String
+  platform     String
+  accessToken  String
+  refreshToken String
+  expiresAt    DateTime
+  scope        String
+  platformUserId String?
+  metadata     Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, platform])
+  @@index([tenantId])
+}
+
+// ─── Webhooks ───────────────────────────────────────────────────────────────
+
+model Webhook {
+  id        String   @id @default(cuid())
+  tenantId  String
+  url       String
+  secret    String
+  events    String[]
+  isEnabled Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant     Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  deliveries WebhookDelivery[]
+
+  @@index([tenantId])
+}
+
+model WebhookDelivery {
+  id             String   @id @default(cuid())
+  webhookId      String
+  event          String
+  requestBody    Json
+  responseStatus Int?
+  responseBody   String?
+  attemptCount   Int      @default(0)
+  lastAttemptAt  DateTime?
+  deliveredAt    DateTime?
+  createdAt      DateTime @default(now())
+
+  webhook Webhook @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  @@index([webhookId])
+  @@index([webhookId, event])
+}
+
+// ─── Audit Events ───────────────────────────────────────────────────────────
+
+model AuditEvent {
+  id         String   @id @default(cuid())
+  tenantId   String
+  action     String
+  entityType String
+  entityId   String
+  actorId    String?
+  payload    Json
+  createdAt  DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, entityType, entityId])
+  @@index([tenantId, action])
 }

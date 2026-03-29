@@ -1,18 +1,42 @@
 import { Module } from "@nestjs/common";
-import { APP_GUARD } from "@nestjs/core";
-import { PrismaClient } from "@prisma/client";
+import { APP_FILTER, APP_GUARD } from "@nestjs/core";
+import { AuthModule } from "./auth/auth.module.js";
+import { JwtAuthGuard } from "./auth/jwt-auth.guard.js";
+import { ScopeGuard } from "./auth/scope.guard.js";
+import { RolesGuard } from "./auth/roles.guard.js";
+import { ConnectorsModule } from "./connectors/connectors.module.js";
+import { GlobalExceptionFilter } from "./filters/http-exception.filter.js";
+import { PrismaModule } from "./prisma/prisma.module.js";
 import { CommandsModule } from "./modules/commands/commands.module.js";
+import { CountersModule } from "./modules/counters/counters.module.js";
+import { CurrencyModule } from "./modules/currency/currency.module.js";
+import { InventoryModule } from "./modules/inventory/inventory.module.js";
+import { MigrationModule } from "./modules/migration/migration.module.js";
+import { StatusModule } from "./modules/status/status.module.js";
 import { UsersModule } from "./modules/users/users.module.js";
 import { TenantGuard } from "./tenancy/tenant.guard.js";
+import { EventsModule } from "./events/events.module.js";
 
 @Module({
-  imports: [CommandsModule, UsersModule],
+  imports: [
+    PrismaModule,
+    AuthModule,
+    ConnectorsModule,
+    EventsModule,
+    StatusModule,
+    CommandsModule,
+    CountersModule,
+    CurrencyModule,
+    InventoryModule,
+    MigrationModule,
+    UsersModule,
+  ],
   providers: [
-    PrismaClient,
-    {
-      provide: APP_GUARD,
-      useClass: TenantGuard,
-    },
+    { provide: APP_FILTER, useClass: GlobalExceptionFilter },
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: TenantGuard },
+    { provide: APP_GUARD, useClass: ScopeGuard },
+    { provide: APP_GUARD, useClass: RolesGuard },
   ],
 })
 export class AppModule {}

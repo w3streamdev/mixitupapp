@@ -1,5 +1,7 @@
 steps:
+  # ─── Install & Test ──────────────────────────────────────────────────
   - name: node:22
+    id: test
     entrypoint: bash
     args:
       - -lc
