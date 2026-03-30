@@ -1,9 +1,9 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import { PrismaClient } from "@prisma/client";
+import { PrismaService } from "../../prisma/prisma.service.js";
 
 @Injectable()
 export class CommandsService {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async getById(tenantId: string, commandId: string) {
     const command = await this.prisma.command.findFirst({ where: { id: commandId, tenantId } });
@@ -14,14 +14,19 @@ export class CommandsService {
   async list(tenantId: string, skip: number, pageSize: number) {
     const [totalCount, commands] = await this.prisma.$transaction([
       this.prisma.command.count({ where: { tenantId } }),
-      this.prisma.command.findMany({ where: { tenantId }, orderBy: { id: "asc" }, skip, take: pageSize }),
+      this.prisma.command.findMany({
+        where: { tenantId },
+        orderBy: { id: "asc" },
+        skip,
+        take: pageSize,
+      }),
     ]);
     return { totalCount, commands };
   }
 
   async updateState(tenantId: string, commandId: string, state: number) {
     const command = await this.getById(tenantId, commandId);
-    let isEnabled = command.isEnabled;
+    let isEnabled: boolean;
     if (state === 0) isEnabled = false;
     else if (state === 1) isEnabled = true;
     else if (state === 2) isEnabled = !command.isEnabled;
@@ -32,6 +37,7 @@ export class CommandsService {
 
   async enqueueRun(tenantId: string, commandId: string, payload: unknown) {
     await this.getById(tenantId, commandId);
+    // TODO: Publish to Pub/Sub for async execution
     return { accepted: true, tenantId, commandId, payload };
   }
 }

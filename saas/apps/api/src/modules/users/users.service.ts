@@ -1,9 +1,9 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { PrismaClient } from "@prisma/client";
+import { PrismaService } from "../../prisma/prisma.service.js";
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async getById(tenantId: string, userId: string) {
     const user = await this.prisma.tenantUser.findFirst({ where: { id: userId, tenantId } });
@@ -14,7 +14,12 @@ export class UsersService {
   async list(tenantId: string, skip: number, pageSize: number) {
     const [totalCount, users] = await this.prisma.$transaction([
       this.prisma.tenantUser.count({ where: { tenantId } }),
-      this.prisma.tenantUser.findMany({ where: { tenantId }, orderBy: { id: "asc" }, skip, take: pageSize }),
+      this.prisma.tenantUser.findMany({
+        where: { tenantId },
+        orderBy: { id: "asc" },
+        skip,
+        take: pageSize,
+      }),
     ]);
     return { totalCount, users };
   }

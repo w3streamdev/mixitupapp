@@ -1,0 +1,96 @@
+steps:
+  # ─── Install & Test ──────────────────────────────────────────────────
+  - name: node:22
+    id: test
+    entrypoint: bash
+    args:
+      - -lc
+      - |
+        corepack enable
+        pnpm install --frozen-lockfile
+        pnpm lint
+        pnpm typecheck
+        pnpm test
+        pnpm build
+
+  # ─── Build API Container ────────────────────────────────────────────
+  - name: gcr.io/cloud-builders/docker
+    id: build-api
+    args:
+      - build
+      - -t
+      - $_REGION-docker.pkg.dev/$PROJECT_ID/mixitup-services/api:$SHORT_SHA
+      - -t
+      - $_REGION-docker.pkg.dev/$PROJECT_ID/mixitup-services/api:latest
+      - -f
+      - apps/api/Dockerfile
+      - .
+    waitFor: [test]
+
+  # ─── Build Worker Container ─────────────────────────────────────────
+  - name: gcr.io/cloud-builders/docker
+    id: build-worker
+    args:
+      - build
+      - -t
+      - $_REGION-docker.pkg.dev/$PROJECT_ID/mixitup-services/worker:$SHORT_SHA
+      - -t
+      - $_REGION-docker.pkg.dev/$PROJECT_ID/mixitup-services/worker:latest
+      - -f
+      - apps/worker/Dockerfile
+      - .
+    waitFor: [test]
+
+  # ─── Push Images ────────────────────────────────────────────────────
+  - name: gcr.io/cloud-builders/docker
+    id: push-api
+    args: [push, --all-tags, "$_REGION-docker.pkg.dev/$PROJECT_ID/mixitup-services/api"]
+    waitFor: [build-api]
+
+  - name: gcr.io/cloud-builders/docker
+    id: push-worker
+    args: [push, --all-tags, "$_REGION-docker.pkg.dev/$PROJECT_ID/mixitup-services/worker"]
+    waitFor: [build-worker]
+
+  # ─── Run DB Migrations ──────────────────────────────────────────────
+  - name: node:22
+    id: migrate
+    entrypoint: bash
+    args:
+      - -lc
+      - |
+        corepack enable
+        pnpm --filter @mixitup/db prisma:deploy
+    waitFor: [test]
+
+  # ─── Deploy API to Cloud Run ────────────────────────────────────────
+  - name: gcr.io/cloud-builders/gcloud
+    id: deploy-api
+    args:
+      - run
+      - deploy
+      - mixitup-api-dev
+      - --image=$_REGION-docker.pkg.dev/$PROJECT_ID/mixitup-services/api:$SHORT_SHA
+      - --region=$_REGION
+      - --platform=managed
+      - --quiet
+    waitFor: [push-api, migrate]
+
+  # ─── Deploy Worker to Cloud Run ─────────────────────────────────────
+  - name: gcr.io/cloud-builders/gcloud
+    id: deploy-worker
+    args:
+      - run
+      - deploy
+      - mixitup-worker-dev
+      - --image=$_REGION-docker.pkg.dev/$PROJECT_ID/mixitup-services/worker:$SHORT_SHA
+      - --region=$_REGION
+      - --platform=managed
+      - --quiet
+    waitFor: [push-worker, migrate]
+
+substitutions:
+  _REGION: us-central1
+
+options:
+  logging: CLOUD_LOGGING_ONLY

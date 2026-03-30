@@ -1,0 +1,9 @@
+export { AuthModule } from "./auth.module.js";
+export { JwtAuthGuard } from "./jwt-auth.guard.js";
+export { JwtService } from "./jwt.service.js";
+export type { JwtPayload } from "./jwt.service.js";
+export { Public, IS_PUBLIC_KEY } from "./public.decorator.js";
+export { RequireScopes, REQUIRED_SCOPES_KEY } from "./scopes.decorator.js";
+export { RequireRoles, REQUIRED_ROLES_KEY } from "./roles.decorator.js";
+export { ScopeGuard } from "./scope.guard.js";
+export { RolesGuard } from "./roles.guard.js";
