@@ -18,13 +18,41 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      router.push("/login");
+    // Check for token in URL hash (from Twitch OAuth redirect)
+    if (typeof window !== "undefined") {
+      const hash = window.location.hash;
+      if (hash) {
+        const params = new URLSearchParams(hash.substring(1));
+        const hashToken = params.get("token");
+        if (hashToken) {
+          localStorage.setItem("token", hashToken);
+          // Clean the URL hash without triggering a navigation
+          window.history.replaceState(null, "", window.location.pathname);
+        }
+      }
+
+      // Now check if we have a token at all
+      const token = localStorage.getItem("token");
+      if (!token) {
+        router.push("/login");
+        return;
+      }
+
+      setReady(true);
     }
   }, [router]);
+
+  // Don't render dashboard content until we've checked auth
+  if (!ready) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-slate-400 text-sm">Loading...</div>
+      </div>
+    );
+  }
 
   function handleLogout() {
     localStorage.removeItem("token");

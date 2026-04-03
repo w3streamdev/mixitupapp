@@ -11,6 +11,26 @@ interface TwitchConnection {
   connectedAt?: string;
 }
 
+interface TokenPayload {
+  name?: string;
+  twitch_username?: string;
+  twitch_id?: string;
+  tenant_id?: string;
+}
+
+function parseToken(): TokenPayload | null {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) return null;
+    const parts = token.split(".");
+    if (parts.length < 2) return null;
+    const payload = JSON.parse(atob(parts[1]!.replace(/-/g, "+").replace(/_/g, "/")));
+    return payload as TokenPayload;
+  } catch {
+    return null;
+  }
+}
+
 export default function ConnectPage() {
   const [twitch, setTwitch] = useState<TwitchConnection>({
     connected: false,
@@ -19,23 +39,42 @@ export default function ConnectPage() {
 
   useEffect(() => {
     async function load() {
+      // First, try to get status from the API
       try {
         const data = await apiClient<TwitchConnection>(
           "/api/v2/auth/twitch/status"
         );
         setTwitch(data);
-      } catch {
-        // Not connected or endpoint doesn't exist yet
-      } finally {
         setLoading(false);
+        return;
+      } catch {
+        // Endpoint may not exist; fall back to token info
       }
+
+      // Fall back: if we logged in via Twitch, we know it's connected
+      const tokenInfo = parseToken();
+      if (tokenInfo?.twitch_username) {
+        setTwitch({
+          connected: true,
+          username: tokenInfo.twitch_username,
+          displayName: tokenInfo.name ?? tokenInfo.twitch_username,
+        });
+      }
+
+      setLoading(false);
     }
     load();
   }, []);
 
-  function connectTwitch() {
-    const token = localStorage.getItem("token");
-    window.location.href = `${getApiUrl()}/api/v2/auth/twitch?token=${token}`;
+  function reconnectTwitch() {
+    const tokenInfo = parseToken();
+    const apiUrl = getApiUrl();
+    const redirectUri = `${window.location.origin}/dashboard/connect`;
+    let url = `${apiUrl}/api/v2/auth/twitch/connect?redirect_uri=${encodeURIComponent(redirectUri)}`;
+    if (tokenInfo?.tenant_id) {
+      url += `&tenant_id=${encodeURIComponent(tokenInfo.tenant_id)}`;
+    }
+    window.location.href = url;
   }
 
   async function disconnectTwitch() {
@@ -75,8 +114,8 @@ export default function ConnectPage() {
           <div className="flex-1 min-w-0">
             <h3 className="text-lg font-semibold">Twitch</h3>
             <p className="text-sm text-slate-400 mt-0.5">
-              Connect your Twitch account to enable chat commands, event
-              listeners, and channel management.
+              Your Twitch account is used for chat commands, event listeners,
+              and channel management.
             </p>
 
             {loading ? (
@@ -96,10 +135,9 @@ export default function ConnectPage() {
                       {twitch.displayName || twitch.username}
                     </div>
                     <div className="text-xs text-slate-500">
-                      Connected{" "}
                       {twitch.connectedAt
-                        ? new Date(twitch.connectedAt).toLocaleDateString()
-                        : ""}
+                        ? `Connected ${new Date(twitch.connectedAt).toLocaleDateString()}`
+                        : "Connected via login"}
                     </div>
                   </div>
                   <span className="ml-auto inline-block px-2 py-0.5 rounded text-xs font-medium bg-emerald-900/30 text-emerald-400 border border-emerald-800/30">
@@ -107,16 +145,24 @@ export default function ConnectPage() {
                   </span>
                 </div>
 
-                <button
-                  onClick={disconnectTwitch}
-                  className="px-4 py-2 rounded-lg border border-red-800/30 text-red-400 hover:bg-red-900/20 text-sm font-medium transition-colors"
-                >
-                  Disconnect
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={reconnectTwitch}
+                    className="px-4 py-2 rounded-lg border border-surface-700 text-slate-300 hover:bg-surface-800 text-sm font-medium transition-colors"
+                  >
+                    Reconnect
+                  </button>
+                  <button
+                    onClick={disconnectTwitch}
+                    className="px-4 py-2 rounded-lg border border-red-800/30 text-red-400 hover:bg-red-900/20 text-sm font-medium transition-colors"
+                  >
+                    Disconnect
+                  </button>
+                </div>
               </div>
             ) : (
               <button
-                onClick={connectTwitch}
+                onClick={reconnectTwitch}
                 className="mt-4 px-5 py-2.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-sm font-semibold transition-colors flex items-center gap-2"
               >
                 <svg

@@ -256,7 +256,8 @@ export class CommandsService {
             }
           }
 
-          return { matched: true, commandId: command.id, executionId, chatResponses };
+          const deleteMessage = definition.deleteMessage === true;
+          return { matched: true, commandId: command.id, executionId, chatResponses, deleteMessage };
         }
       }
     }
