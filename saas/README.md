@@ -1,4 +1,4 @@
-# MixItUp SaaS (Node + GCP)
+# w3StreamItUp SaaS (Node + GCP)
 
 Cloud-native, multi-tenant streaming platform API built with NestJS, Prisma, and Google Cloud Platform.
 

@@ -8,11 +8,14 @@ export interface JwtPayload {
   aud: string | string[];
   exp: number;
   iat: number;
-  tenant_id: string;
+  /** Present in custom JWTs; absent in Firebase ID tokens (resolved from DB instead) */
+  tenant_id?: string;
   scope?: string;
   roles?: string[];
   email?: string;
   name?: string;
+  /** Firebase-specific: set when token comes from Firebase Auth */
+  firebase?: { sign_in_provider?: string };
 }
 
 interface JwksKey {

@@ -1,5 +1,6 @@
 export { AuthModule } from "./auth.module.js";
-export { JwtAuthGuard } from "./jwt-auth.guard.js";
+export { JwtAuthGuard, TENANT_RESOLVER } from "./jwt-auth.guard.js";
+export type { TenantResolver } from "./jwt-auth.guard.js";
 export { JwtService } from "./jwt.service.js";
 export type { JwtPayload } from "./jwt.service.js";
 export { Public, IS_PUBLIC_KEY } from "./public.decorator.js";

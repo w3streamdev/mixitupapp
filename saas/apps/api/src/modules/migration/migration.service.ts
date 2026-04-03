@@ -1,3 +1,4 @@
+import * as crypto from "node:crypto";
 import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service.js";
 
@@ -184,7 +185,7 @@ export class MigrationService {
         }
       }
 
-      job.status = job.errors.length > 0 ? "completed" : "completed";
+      job.status = job.errors.length > 0 ? "failed" : "completed";
       job.completedAt = new Date();
       this.logger.log(
         `Migration ${job.id} completed: ${job.entitiesProcessed}/${job.entitiesTotal} entities, ${job.errors.length} errors`,

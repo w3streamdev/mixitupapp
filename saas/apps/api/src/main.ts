@@ -8,9 +8,11 @@ import { AppModule } from "./app.module.js";
 async function bootstrap(): Promise<void> {
   const logger = new Logger("Bootstrap");
 
-  const app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter(), {
-    logger: ["error", "warn", "log"],
-  });
+  const app = await NestFactory.create<NestFastifyApplication>(
+    AppModule,
+    new FastifyAdapter({ bodyLimit: 1_048_576 }),
+    { logger: ["error", "warn", "log"], rawBody: true },
+  );
 
   app.enableCors({
     origin: process.env.CORS_ORIGIN ?? "*",
@@ -28,8 +30,8 @@ async function bootstrap(): Promise<void> {
   );
 
   const config = new DocumentBuilder()
-    .setTitle("MixItUp API")
-    .setDescription("MixItUp SaaS Platform API")
+    .setTitle("w3StreamItUp API")
+    .setDescription("w3StreamItUp SaaS Platform API")
     .setVersion("2.0.0")
     .addBearerAuth()
     .addServer("/", "Current server")

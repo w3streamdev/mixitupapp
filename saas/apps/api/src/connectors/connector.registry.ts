@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import type { PlatformConnector } from "./connector.interface.js";
-import type { TwitchConnector } from "./twitch.connector.js";
-import type { YouTubeConnector } from "./youtube.connector.js";
-import type { TrovoConnector } from "./trovo.connector.js";
+import { TwitchConnector } from "./twitch.connector.js";
+import { YouTubeConnector } from "./youtube.connector.js";
+import { TrovoConnector } from "./trovo.connector.js";
 
 @Injectable()
 export class ConnectorRegistry {

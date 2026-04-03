@@ -15,8 +15,9 @@
     "allowSyntheticDefaultImports": true,
     "baseUrl": ".",
     "paths": {
-      "@mixitup/config/*": ["packages/config/src/*"],
-      "@mixitup/db/*": ["packages/db/src/*"]
+      "@mixitup/db/*": ["packages/db/src/*"],
+      "@mixitup/shared": ["packages/shared/src/index.ts"],
+      "@mixitup/shared/*": ["packages/shared/src/*"]
     }
   }
 }

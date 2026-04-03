@@ -1,10 +1,10 @@
 openapi: "3.1.0"
 info:
-  title: MixItUp SaaS API
+  title: w3StreamItUp SaaS API
   version: "2.0.0"
-  description: MixItUp cloud-native multi-tenant streaming platform API
+  description: w3StreamItUp cloud-native multi-tenant streaming platform API
   contact:
-    name: MixItUp Team
+    name: w3StreamItUp Team
   license:
     name: Proprietary
 

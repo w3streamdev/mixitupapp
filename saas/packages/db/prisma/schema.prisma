@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
@@ -22,8 +23,9 @@ model Tenant {
   currencies  Currency[]
   inventories Inventory[]
   connections IntegrationConnection[]
-  webhooks    Webhook[]
-  auditEvents AuditEvent[]
+  webhooks        Webhook[]
+  webhookCommands WebhookCommand[]
+  auditEvents     AuditEvent[]
 }
 
 model AppUser {
@@ -97,6 +99,27 @@ model Command {
 
   @@index([tenantId, name])
   @@index([tenantId, isEnabled])
+}
+
+model CommandExecution {
+  id          String    @id @default(cuid())
+  tenantId    String
+  commandId   String
+  status      String    // "pending", "running", "completed", "failed", "cancelled"
+  triggerType String    // "chat", "api", "test", "event", "timer", "command_ref"
+  platform    String?
+  userId      String?
+  input       Json
+  output      Json?
+  error       String?
+  durationMs  Int?
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, commandId])
+  @@index([commandId, status])
 }
 
 // ─── Counters ───────────────────────────────────────────────────────────────
@@ -255,6 +278,24 @@ model WebhookDelivery {
 
   @@index([webhookId])
   @@index([webhookId, event])
+}
+
+// ─── Webhook Commands (Inbound) ────────────────────────────────────────────
+
+model WebhookCommand {
+  id        String   @id @default(cuid())
+  tenantId  String
+  name      String
+  secret    String   @unique
+  commandId String
+  isEnabled Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([secret])
 }
 
 // ─── Audit Events ───────────────────────────────────────────────────────────
