@@ -1,96 +1,70 @@
 #!/usr/bin/env node
-/**
- * Lightweight Twitch chat bridge.
- * Connects to Twitch IRC via tmi.js, forwards messages to the SaaS API,
- * and sends replies back to chat.
- *
- * Run: node chat-bridge.js
- */
-
 const tmi = require('tmi.js');
 
-const API_URL = process.env.API_URL || 'https://mixitup-api-dev-958043331506.us-central1.run.app';
-const TOKEN = process.env.JWT_TOKEN || '';
-const TWITCH_TOKEN = process.env.TWITCH_TOKEN || '';
-const CHANNEL = process.env.TWITCH_CHANNEL || 'vybecodez';
+const API_URL = process.env.API_URL || 'https://w3s.connect3.io';
+const JWT = process.env.JWT_TOKEN || '';
+const TW_TOKEN = process.env.TWITCH_TOKEN || '';
+const CH = process.env.TWITCH_CHANNEL || 'vybecodez';
 
-if (!TOKEN) {
-  console.error('JWT_TOKEN env var required');
-  process.exit(1);
-}
-if (!TWITCH_TOKEN) {
-  console.error('TWITCH_TOKEN env var required (Twitch OAuth access token)');
-  process.exit(1);
-}
+if (!JWT || !TW_TOKEN) { console.error('JWT_TOKEN and TWITCH_TOKEN required'); process.exit(1); }
 
 const client = new tmi.Client({
   options: { debug: false },
   connection: { reconnect: true, secure: true },
-  identity: {
-    username: CHANNEL,
-    password: `oauth:${TWITCH_TOKEN}`,
-  },
-  channels: [CHANNEL],
+  identity: { username: CH, password: 'oauth:' + TW_TOKEN },
+  channels: [CH],
 });
 
-client.on('connected', (addr, port) => {
-  console.log(`[ChatBridge] Connected to Twitch IRC at ${addr}:${port}`);
-  console.log(`[ChatBridge] Listening in #${CHANNEL}`);
-});
+client.on('connected', (a, p) => console.log('[Bot] Connected ' + a + ':' + p + ' #' + CH));
+client.on('disconnected', (r) => console.log('[Bot] Disconnected: ' + r));
 
-client.on('message', async (channel, tags, message, self) => {
+client.on('message', async function(channel, tags, message, self) {
   if (self) return;
 
-  const username = tags['username'] || tags['display-name'] || 'unknown';
-  const displayName = tags['display-name'] || username;
-  const userId = tags['user-id'] || '';
+  var user = tags['display-name'] || tags['username'] || '?';
+  var msgId = tags['id'] || '';
+  var msg = message.trim();
+
+  console.log('[Chat] ' + user + ': ' + msg);
+
+  if (!msg.startsWith('!')) return;
 
   try {
-    // Send to our API's chat-trigger endpoint
-    const res = await fetch(`${API_URL}/api/v2/commands/chat-trigger`, {
+    var res = await fetch(API_URL + '/api/v2/commands/chat-trigger', {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${TOKEN}`,
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Authorization': 'Bearer ' + JWT, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         platform: 'twitch',
-        userId,
-        username,
-        displayName,
-        message: message.trim(),
+        userId: tags['user-id'] || '',
+        username: tags['username'] || user,
+        displayName: user,
+        message: msg,
+        messageId: msgId,
       }),
     });
 
-    const data = await res.json();
+    var data = await res.json();
 
     if (data.matched && data.premade && data.response) {
-      // Pre-made command: send response directly to chat
       await client.say(channel, data.response);
-      console.log(`[ChatBridge] ${displayName}: ${message} -> [premade] ${data.response}`);
+      console.log('[Bot] -> ' + data.response);
     } else if (data.matched) {
-      // Send chat responses resolved by the API for custom commands
-      if (data.chatResponses && data.chatResponses.length > 0) {
-        for (const response of data.chatResponses) {
-          await client.say(channel, response);
+      if (data.chatResponses) {
+        for (var i = 0; i < data.chatResponses.length; i++) {
+          await client.say(channel, data.chatResponses[i]);
+          console.log('[Bot] -> ' + data.chatResponses[i]);
         }
-        console.log(`[ChatBridge] ${displayName}: ${message} -> matched command ${data.commandId}, sent ${data.chatResponses.length} chat response(s)`);
-      } else {
-        console.log(`[ChatBridge] ${displayName}: ${message} -> matched command ${data.commandId} (execution: ${data.executionId}, no chat actions)`);
+      }
+      if (data.deleteMessage && msgId) {
+        try { await client.deletemessage(channel, msgId); console.log('[Bot] Deleted msg'); }
+        catch(e) { console.log('[Bot] Delete failed: ' + e.message); }
       }
     }
-  } catch (err) {
-    console.error(`[ChatBridge] Error processing message from ${displayName}:`, err.message);
+  } catch(e) {
+    console.error('[Bot] Error: ' + e.message);
   }
 });
 
-client.on('disconnected', (reason) => {
-  console.log(`[ChatBridge] Disconnected: ${reason}`);
-});
-
-client.connect().then(() => {
-  console.log('[ChatBridge] w3StreamItUp chat bridge is running!');
-}).catch((err) => {
-  console.error('[ChatBridge] Failed to connect:', err);
-  process.exit(1);
+client.connect().then(function() {
+  console.log('[Bot] w3StreamItUp is live!');
 });

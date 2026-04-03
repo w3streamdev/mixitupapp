@@ -20,12 +20,16 @@ const SCOPES = [
   "user:read:chat",
   "user:write:chat",
   "user:bot",
+  "moderator:manage:chat_messages",
   "channel:bot",
 ].join(" ");
 
 const REDIRECT_URI =
   process.env.TWITCH_REDIRECT_URI ??
   "https://w3s.connect3.io/api/v2/auth/twitch/callback";
+
+const ALL_SCOPES =
+  "commands:read commands:write counters:read counters:write currency:read currency:write inventory:read inventory:write users:read users:write webhooks:read webhooks:write migration:write settings:read settings:write";
 
 @Controller("api/v2/auth/twitch")
 export class TwitchOAuthController {
@@ -36,16 +40,27 @@ export class TwitchOAuthController {
     private readonly eventSubService: TwitchEventSubService,
   ) {}
 
+  /**
+   * GET /api/v2/auth/twitch/connect
+   *
+   * Initiates Twitch OAuth flow. Accepts optional tenant_id (for existing users
+   * reconnecting) and optional redirect_uri (for frontend redirect after auth).
+   * If no tenant_id is provided, a new tenant will be created on callback.
+   */
   @Public()
   @Get("connect")
-  connect(@Query("tenant_id") tenantId: string, @Res() reply: FastifyReply): void {
-    if (!tenantId) {
-      void reply.status(400).send({ error: "tenant_id query parameter is required" });
-      return;
-    }
-
+  connect(
+    @Query("tenant_id") tenantId: string | undefined,
+    @Query("redirect_uri") redirectUri: string | undefined,
+    @Res() reply: FastifyReply,
+  ): void {
     const clientId = process.env.TWITCH_CLIENT_ID ?? "";
-    const state = Buffer.from(JSON.stringify({ tenantId })).toString("base64url");
+
+    const statePayload: { tenantId?: string; redirectUri?: string } = {};
+    if (tenantId) statePayload.tenantId = tenantId;
+    if (redirectUri) statePayload.redirectUri = redirectUri;
+
+    const state = Buffer.from(JSON.stringify(statePayload)).toString("base64url");
 
     const params = new URLSearchParams({
       client_id: clientId,
@@ -82,13 +97,16 @@ export class TwitchOAuthController {
       return;
     }
 
-    // Decode tenant_id from state
-    let tenantId: string;
+    // Decode state
+    let tenantId: string | undefined;
+    let redirectUri: string | undefined;
     try {
       const decoded = JSON.parse(Buffer.from(state, "base64url").toString("utf-8")) as {
-        tenantId: string;
+        tenantId?: string;
+        redirectUri?: string;
       };
       tenantId = decoded.tenantId;
+      redirectUri = decoded.redirectUri;
     } catch {
       void reply.status(400).send({ error: "Invalid state parameter" });
       return;
@@ -150,6 +168,7 @@ export class TwitchOAuthController {
     let platformUserId: string;
     let username: string;
     let displayName: string;
+    let email: string | undefined;
 
     try {
       const userRes = await fetch(TWITCH_USERS_URL, {
@@ -164,7 +183,7 @@ export class TwitchOAuthController {
       }
 
       const userData = (await userRes.json()) as {
-        data: Array<{ id: string; login: string; display_name: string }>;
+        data: Array<{ id: string; login: string; display_name: string; email?: string }>;
       };
 
       const user = userData.data[0];
@@ -173,6 +192,7 @@ export class TwitchOAuthController {
       platformUserId = user.id;
       username = user.login;
       displayName = user.display_name;
+      email = user.email;
     } catch (err) {
       this.logger.error("Failed to fetch Twitch user info", err);
       void reply
@@ -182,12 +202,78 @@ export class TwitchOAuthController {
       return;
     }
 
-    // Upsert IntegrationConnection
+    // ── Auto-provision: AppUser + Tenant + TenantMembership ──────────────
+    const subject = `twitch-${platformUserId}`;
+
     try {
+      const result = await this.prisma.$transaction(async (tx) => {
+        // Upsert AppUser keyed by Twitch subject
+        const appUser = await tx.appUser.upsert({
+          where: { subject },
+          create: {
+            subject,
+            email: email ?? null,
+            displayName,
+          },
+          update: {
+            ...(email ? { email } : {}),
+            displayName,
+          },
+        });
+
+        // Check existing membership
+        const existingMembership = await tx.tenantMembership.findFirst({
+          where: { userId: appUser.id },
+          include: { tenant: true },
+        });
+
+        let tenant: { id: string; slug: string; name: string };
+        let role: string;
+
+        if (existingMembership) {
+          // User already has a tenant
+          tenant = existingMembership.tenant;
+          role = existingMembership.role;
+        } else if (tenantId) {
+          // Connecting to an existing tenant (provided via query param)
+          const existingTenant = await tx.tenant.findUnique({ where: { id: tenantId } });
+          if (!existingTenant) {
+            throw new Error(`Tenant ${tenantId} not found`);
+          }
+          tenant = existingTenant;
+          await tx.tenantMembership.create({
+            data: { tenantId: tenant.id, userId: appUser.id, role: "owner" },
+          });
+          role = "owner";
+        } else {
+          // New user: create a new tenant
+          const slug = await this.ensureUniqueSlug(tx, this.generateSlug(displayName));
+          tenant = await tx.tenant.create({
+            data: {
+              slug,
+              name: `${displayName}'s Stream`,
+            },
+          });
+          await tx.tenantMembership.create({
+            data: { tenantId: tenant.id, userId: appUser.id, role: "owner" },
+          });
+          role = "owner";
+        }
+
+        return { appUser, tenant, role };
+      });
+
+      tenantId = result.tenant.id;
+
+      this.logger.log(
+        `Provisioned/resolved user ${result.appUser.id} for tenant ${result.tenant.id} (slug: ${result.tenant.slug})`,
+      );
+
+      // Upsert IntegrationConnection (outside the user-provision transaction)
       await this.prisma.integrationConnection.upsert({
-        where: { tenantId_platform: { tenantId, platform: "twitch" } },
+        where: { tenantId_platform: { tenantId: result.tenant.id, platform: "twitch" } },
         create: {
-          tenantId,
+          tenantId: result.tenant.id,
           platform: "twitch",
           accessToken,
           refreshToken,
@@ -207,27 +293,46 @@ export class TwitchOAuthController {
       });
 
       this.logger.log(
-        `Stored Twitch connection for tenant ${tenantId} (user: ${username}, id: ${platformUserId})`,
+        `Stored Twitch connection for tenant ${result.tenant.id} (user: ${username}, id: ${platformUserId})`,
       );
-    } catch (err) {
-      this.logger.error("Failed to store integration connection", err);
-      void reply
-        .status(500)
-        .type("text/html")
-        .send("<html><body><h2>Failed to store connection.</h2></body></html>");
-      return;
-    }
 
-    // Subscribe to EventSub
-    try {
-      await this.eventSubService.subscribeToChat(tenantId);
-      this.logger.log(`EventSub subscriptions created for tenant ${tenantId}`);
-    } catch (err) {
-      // Non-fatal: log but still report success to user
-      this.logger.error("EventSub subscription setup failed (non-fatal)", err);
-    }
+      // Subscribe to EventSub (non-fatal)
+      try {
+        await this.eventSubService.subscribeToChat(result.tenant.id);
+        this.logger.log(`EventSub subscriptions created for tenant ${result.tenant.id}`);
+      } catch (err) {
+        this.logger.error("EventSub subscription setup failed (non-fatal)", err);
+      }
 
-    void reply.status(200).type("text/html").send(`<!DOCTYPE html>
+      // ── Generate dev JWT ──────────────────────────────────────────────
+      const header = Buffer.from(JSON.stringify({ alg: "none", typ: "JWT" })).toString("base64url");
+      const payload = Buffer.from(
+        JSON.stringify({
+          sub: subject,
+          iss: "dev",
+          aud: "dev",
+          exp: Math.floor(Date.now() / 1000) + 86400, // 24 hours
+          iat: Math.floor(Date.now() / 1000),
+          tenant_id: result.tenant.id,
+          scope: ALL_SCOPES,
+          roles: [result.role],
+          email: email ?? null,
+          name: displayName,
+          twitch_username: username,
+          twitch_id: platformUserId,
+        }),
+      ).toString("base64url");
+
+      const token = `${header}.${payload}.dev`;
+
+      // ── Redirect to frontend with token ───────────────────────────────
+      if (redirectUri) {
+        const targetUrl = `${redirectUri}#token=${token}`;
+        this.logger.log(`Redirecting to frontend: ${redirectUri}`);
+        void reply.status(302).redirect(targetUrl);
+      } else {
+        // Backward compat: show success HTML if no redirect_uri
+        void reply.status(200).type("text/html").send(`<!DOCTYPE html>
 <html>
 <head><title>w3StreamItUp - Twitch Connected</title></head>
 <body style="font-family: sans-serif; text-align: center; padding: 60px;">
@@ -236,5 +341,36 @@ export class TwitchOAuthController {
   <p>You can close this window.</p>
 </body>
 </html>`);
+      }
+    } catch (err) {
+      this.logger.error("Failed to provision user or store connection", err);
+      void reply
+        .status(500)
+        .type("text/html")
+        .send("<html><body><h2>Failed to complete login. Please try again.</h2></body></html>");
+    }
+  }
+
+  private generateSlug(name: string): string {
+    return (
+      name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "")
+        .slice(0, 40) || "stream"
+    );
+  }
+
+  private async ensureUniqueSlug(
+    tx: { tenant: { findUnique: (args: { where: { slug: string } }) => Promise<unknown> } },
+    baseSlug: string,
+  ): Promise<string> {
+    let slug = baseSlug;
+    let suffix = 0;
+    while (await tx.tenant.findUnique({ where: { slug } })) {
+      suffix++;
+      slug = `${baseSlug}-${suffix}`;
+    }
+    return slug;
   }
 }
