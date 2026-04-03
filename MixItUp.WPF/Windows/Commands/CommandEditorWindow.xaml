@@ -1,0 +1,164 @@
+﻿<Windows:LoadingWindowBase
+    x:Class="MixItUp.WPF.Windows.Commands.CommandEditorWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ActionControls="clr-namespace:MixItUp.WPF.Controls.Actions"
+    xmlns:Controls="clr-namespace:MixItUp.WPF.Controls"
+    xmlns:MaterialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+    xmlns:Util="clr-namespace:MixItUp.WPF.Util"
+    xmlns:Windows="clr-namespace:MixItUp.WPF.Windows"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:MixItUp.WPF.Windows.Commands"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:resx="clr-namespace:MixItUp.Base;assembly=MixItUp.Base"
+    Title="{Binding WindowTitle}"
+    Width="800"
+    Height="600"
+    AllowDrop="True"
+    Drop="CommandEditorWindow_Drop"
+    FontFamily="{MaterialDesign:MaterialDesignFont}"
+    Icon="./../../Logo.ico"
+    PreviewDragEnter="CommandEditorWindow_PreviewDragEnter"
+    PreviewDragLeave="CommandEditorWindow_PreviewDragLeave"
+    Style="{StaticResource MaterialDesignWindow}"
+    TextElement.FontSize="14"
+    TextElement.FontWeight="Medium"
+    mc:Ignorable="d">
+    <Windows:LoadingWindowBase.Resources>
+        <Util:LocalizationConverter x:Key="LocalizationConverter" />
+    </Windows:LoadingWindowBase.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <MaterialDesign:DialogHost x:Name="MDDialogHost" Identifier="RootDialog" />
+
+        <Grid Grid.Row="0" Margin="10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="10" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="10" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <ContentControl x:Name="DetailsContentControl" Grid.Row="0" />
+
+            <Border Grid.Row="2" Style="{StaticResource DefaultBorder}">
+                <Grid>
+                    <Grid
+                        x:Name="ImportCommandVisualGrid"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Center"
+                        Visibility="Hidden">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="20" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <MaterialDesign:PackIcon
+                            Grid.Row="0"
+                            Width="80"
+                            Height="80"
+                            Margin="-7,-10"
+                            HorizontalAlignment="Center"
+                            Kind="Import"
+                            Style="{StaticResource DarkLightBackgroundPackIcon}" />
+
+                        <TextBlock
+                            Grid.Row="2"
+                            HorizontalAlignment="Center"
+                            FontSize="40"
+                            Text="{x:Static resx:Resources.ImportActions}" />
+                    </Grid>
+
+                    <ScrollViewer x:Name="ActionsGrid" HorizontalScrollBarVisibility="Disabled">
+                        <ActionControls:ActionEditorListControl />
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+
+            <Grid Grid.Row="4" HorizontalAlignment="Center">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="20" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="30" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="5" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="30" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="5" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <ComboBox
+                    Grid.Column="0"
+                    Width="200"
+                    MaterialDesign:HintAssist.Hint="{x:Static resx:Resources.Action}"
+                    ItemsSource="{Binding ActionTypes}"
+                    MaxDropDownHeight="400"
+                    SelectedItem="{Binding SelectedActionType}"
+                    Style="{StaticResource MaterialDesignFloatingHintComboBox}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Converter={StaticResource LocalizationConverter}}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+
+                <Controls:IconButton
+                    Grid.Column="2"
+                    Command="{Binding AddCommand}"
+                    Icon="Plus"
+                    ToolTip="{x:Static resx:Resources.Add}" />
+
+                <Controls:IconButton
+                    Grid.Column="4"
+                    Command="{Binding SaveCommand}"
+                    Icon="ContentSave"
+                    ToolTip="{x:Static resx:Resources.Save}" />
+
+                <Controls:IconButton
+                    Grid.Column="6"
+                    Command="{Binding TestCommand}"
+                    Icon="Play"
+                    ToolTip="{x:Static resx:Resources.TestCommand}" />
+                <Controls:IconButton
+                    Grid.Column="6"
+                    Icon="Stop"
+                    ToolTip="{x:Static resx:Resources.StopCommand}"
+                    Visibility="Collapsed" />
+
+                <Controls:IconButton
+                    Grid.Column="8"
+                    Command="{Binding ExportCommand}"
+                    Icon="Export"
+                    ToolTip="{x:Static resx:Resources.ExportActions}" />
+                <Controls:IconButton
+                    Grid.Column="10"
+                    Command="{Binding ImportCommand}"
+                    Icon="Import"
+                    ToolTip="{x:Static resx:Resources.ImportActions}" />
+
+                <Button
+                    x:Name="UploadCommunityCommandButton"
+                    Grid.Column="11"
+                    Margin="30,0,0,0"
+                    Click="UploadCommunityCommandButton_Click"
+                    Content="{x:Static resx:Resources.CommunityCommandsUploadToCommunity}"
+                    ToolTip="{x:Static resx:Resources.CommunityCommandsUploadToCommunityTooltip}"
+                    Visibility="{Binding IsExistingCommand, Converter={StaticResource BooleanToVisibilityConverter}}" />
+
+            </Grid>
+        </Grid>
+
+        <Controls:LoadingStatusBar x:Name="StatusBar" Grid.Row="1" />
+    </Grid>
+</Windows:LoadingWindowBase>

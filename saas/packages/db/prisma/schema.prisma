@@ -1,0 +1,318 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Core Tenancy ───────────────────────────────────────────────────────────
+
+model Tenant {
+  id          String              @id @default(cuid())
+  slug        String              @unique
+  name        String
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  memberships TenantMembership[]
+  commands    Command[]
+  users       TenantUser[]
+  counters    Counter[]
+  currencies  Currency[]
+  inventories Inventory[]
+  connections IntegrationConnection[]
+  webhooks        Webhook[]
+  webhookCommands WebhookCommand[]
+  auditEvents     AuditEvent[]
+}
+
+model AppUser {
+  id          String              @id @default(cuid())
+  subject     String              @unique
+  email       String?
+  displayName String?
+  createdAt   DateTime            @default(now())
+  memberships TenantMembership[]
+}
+
+model TenantMembership {
+  id        String   @id @default(cuid())
+  tenantId  String
+  userId    String
+  role      String
+  createdAt DateTime @default(now())
+
+  tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId])
+  @@index([tenantId])
+  @@index([userId])
+}
+
+// ─── Platform Users ─────────────────────────────────────────────────────────
+
+model TenantUser {
+  id                   String    @id @default(cuid())
+  tenantId             String
+  platform             String
+  platformUserId       String?
+  username             String?
+  displayName          String?
+  avatarLink           String?
+  subscriberBadgeLink  String?
+  roleBadgeLink        String?
+  specialtyBadgeLink   String?
+  lastActivity         DateTime?
+  lastUpdated          DateTime?
+  onlineViewingMinutes Int       @default(0)
+  customTitle          String?
+  isSpecialtyExcluded  Boolean   @default(false)
+  notes                String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, platform, platformUserId])
+  @@index([tenantId, username])
+  @@index([tenantId, displayName])
+}
+
+// ─── Commands ───────────────────────────────────────────────────────────────
+
+model Command {
+  id         String   @id @default(cuid())
+  tenantId   String
+  name       String
+  type       String
+  isEnabled  Boolean  @default(true)
+  unlocked   Boolean  @default(true)
+  groupName  String?
+  definition Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, name])
+  @@index([tenantId, isEnabled])
+}
+
+model CommandExecution {
+  id          String    @id @default(cuid())
+  tenantId    String
+  commandId   String
+  status      String    // "pending", "running", "completed", "failed", "cancelled"
+  triggerType String    // "chat", "api", "test", "event", "timer", "command_ref"
+  platform    String?
+  userId      String?
+  input       Json
+  output      Json?
+  error       String?
+  durationMs  Int?
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, commandId])
+  @@index([commandId, status])
+}
+
+// ─── Counters ───────────────────────────────────────────────────────────────
+
+model Counter {
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String
+  amount      Int      @default(0)
+  resetAmount Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+}
+
+// ─── Currency + Ledger ──────────────────────────────────────────────────────
+
+model Currency {
+  id              String   @id @default(cuid())
+  tenantId        String
+  name            String
+  acquireAmount   Int      @default(1)
+  acquireInterval Int      @default(60)
+  maxAmount       Int      @default(0)
+  isEnabled       Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant  Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  ledgers CurrencyLedger[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+}
+
+model CurrencyLedger {
+  id         String   @id @default(cuid())
+  currencyId String
+  userId     String
+  amount     Int      @default(0)
+  updatedAt  DateTime @updatedAt
+
+  currency Currency @relation(fields: [currencyId], references: [id], onDelete: Cascade)
+
+  @@unique([currencyId, userId])
+  @@index([currencyId])
+  @@index([userId])
+}
+
+// ─── Inventory + Items + Ledger ─────────────────────────────────────────────
+
+model Inventory {
+  id               String   @id @default(cuid())
+  tenantId         String
+  name             String
+  defaultMaxAmount Int      @default(-1)
+  shopEnabled      Boolean  @default(false)
+  shopCurrencyId   String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  tenant Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  items  InventoryItem[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+}
+
+model InventoryItem {
+  id            String   @id @default(cuid())
+  inventoryId   String
+  name          String
+  maxAmount     Int      @default(-1)
+  shopBuyPrice  Int      @default(0)
+  shopSellPrice Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  inventory Inventory        @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+  ledgers   InventoryLedger[]
+
+  @@unique([inventoryId, name])
+  @@index([inventoryId])
+}
+
+model InventoryLedger {
+  id        String   @id @default(cuid())
+  itemId    String
+  userId    String
+  amount    Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  item InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([itemId, userId])
+  @@index([itemId])
+  @@index([userId])
+}
+
+// ─── Integration Connections ────────────────────────────────────────────────
+
+model IntegrationConnection {
+  id           String   @id @default(cuid())
+  tenantId     String
+  platform     String
+  accessToken  String
+  refreshToken String
+  expiresAt    DateTime
+  scope        String
+  platformUserId String?
+  metadata     Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, platform])
+  @@index([tenantId])
+}
+
+// ─── Webhooks ───────────────────────────────────────────────────────────────
+
+model Webhook {
+  id        String   @id @default(cuid())
+  tenantId  String
+  url       String
+  secret    String
+  events    String[]
+  isEnabled Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant     Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  deliveries WebhookDelivery[]
+
+  @@index([tenantId])
+}
+
+model WebhookDelivery {
+  id             String   @id @default(cuid())
+  webhookId      String
+  event          String
+  requestBody    Json
+  responseStatus Int?
+  responseBody   String?
+  attemptCount   Int      @default(0)
+  lastAttemptAt  DateTime?
+  deliveredAt    DateTime?
+  createdAt      DateTime @default(now())
+
+  webhook Webhook @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  @@index([webhookId])
+  @@index([webhookId, event])
+}
+
+// ─── Webhook Commands (Inbound) ────────────────────────────────────────────
+
+model WebhookCommand {
+  id        String   @id @default(cuid())
+  tenantId  String
+  name      String
+  secret    String   @unique
+  commandId String
+  isEnabled Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([secret])
+}
+
+// ─── Audit Events ───────────────────────────────────────────────────────────
+
+model AuditEvent {
+  id         String   @id @default(cuid())
+  tenantId   String
+  action     String
+  entityType String
+  entityId   String
+  actorId    String?
+  payload    Json
+  createdAt  DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, entityType, entityId])
+  @@index([tenantId, action])
+}

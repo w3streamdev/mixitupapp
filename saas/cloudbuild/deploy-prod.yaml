@@ -1,0 +1,103 @@
+steps:
+  - name: node:22
+    id: test
+    entrypoint: bash
+    args:
+      - -lc
+      - |
+        corepack enable
+        pnpm install --frozen-lockfile
+        pnpm ci
+
+  - name: gcr.io/cloud-builders/docker
+    id: build-api
+    args:
+      - build
+      - -t
+      - $_REGION-docker.pkg.dev/$PROJECT_ID/mixitup-services/api:$TAG_NAME
+      - -t
+      - $_REGION-docker.pkg.dev/$PROJECT_ID/mixitup-services/api:prod
+      - -f
+      - apps/api/Dockerfile
+      - .
+    waitFor: [test]
+
+  - name: gcr.io/cloud-builders/docker
+    id: build-worker
+    args:
+      - build
+      - -t
+      - $_REGION-docker.pkg.dev/$PROJECT_ID/mixitup-services/worker:$TAG_NAME
+      - -t
+      - $_REGION-docker.pkg.dev/$PROJECT_ID/mixitup-services/worker:prod
+      - -f
+      - apps/worker/Dockerfile
+      - .
+    waitFor: [test]
+
+  - name: gcr.io/cloud-builders/docker
+    id: push-api
+    args: [push, --all-tags, "$_REGION-docker.pkg.dev/$PROJECT_ID/mixitup-services/api"]
+    waitFor: [build-api]
+
+  - name: gcr.io/cloud-builders/docker
+    id: push-worker
+    args: [push, --all-tags, "$_REGION-docker.pkg.dev/$PROJECT_ID/mixitup-services/worker"]
+    waitFor: [build-worker]
+
+  - name: node:22
+    id: migrate
+    entrypoint: bash
+    args:
+      - -lc
+      - |
+        corepack enable
+        pnpm --filter @mixitup/db prisma:deploy
+    waitFor: [test]
+
+  # Deploy API with canary (25% traffic)
+  - name: gcr.io/cloud-builders/gcloud
+    id: deploy-api-canary
+    args:
+      - run
+      - deploy
+      - mixitup-api-prod
+      - --image=$_REGION-docker.pkg.dev/$PROJECT_ID/mixitup-services/api:$TAG_NAME
+      - --region=$_REGION
+      - --platform=managed
+      - --tag=canary
+      - --no-traffic
+      - --quiet
+    waitFor: [push-api, migrate]
+
+  # Deploy Worker
+  - name: gcr.io/cloud-builders/gcloud
+    id: deploy-worker
+    args:
+      - run
+      - deploy
+      - mixitup-worker-prod
+      - --image=$_REGION-docker.pkg.dev/$PROJECT_ID/mixitup-services/worker:$TAG_NAME
+      - --region=$_REGION
+      - --platform=managed
+      - --quiet
+    waitFor: [push-worker, migrate]
+
+  # Route 25% to canary
+  - name: gcr.io/cloud-builders/gcloud
+    id: canary-traffic
+    args:
+      - run
+      - services
+      - update-traffic
+      - mixitup-api-prod
+      - --to-tags=canary=25
+      - --region=$_REGION
+      - --quiet
+    waitFor: [deploy-api-canary]
+
+substitutions:
+  _REGION: us-central1
+
+options:
+  logging: CLOUD_LOGGING_ONLY

@@ -1,0 +1,903 @@
+openapi: "3.1.0"
+info:
+  title: w3StreamItUp SaaS API
+  version: "2.0.0"
+  description: w3StreamItUp cloud-native multi-tenant streaming platform API
+  contact:
+    name: w3StreamItUp Team
+  license:
+    name: Proprietary
+
+servers:
+  - url: /
+    description: Current server
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ProblemDetail:
+      type: object
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        traceId:
+          type: string
+      required: [type, title, status, detail, instance, timestamp]
+
+    PaginationQuery:
+      type: object
+      properties:
+        skip:
+          type: integer
+          minimum: 0
+          default: 0
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 250
+          default: 25
+
+    CommandContract:
+      type: object
+      properties:
+        ID:
+          type: string
+        Name:
+          type: string
+        Type:
+          type: string
+        IsEnabled:
+          type: boolean
+        Unlocked:
+          type: boolean
+        GroupName:
+          type: string
+          nullable: true
+      required: [ID, Name, Type, IsEnabled, Unlocked]
+
+    UserContract:
+      type: object
+      properties:
+        ID:
+          type: string
+        LastActivity:
+          type: string
+          format: date-time
+          nullable: true
+        LastUpdated:
+          type: string
+          format: date-time
+          nullable: true
+        OnlineViewingMinutes:
+          type: integer
+        CustomTitle:
+          type: string
+          nullable: true
+        IsSpecialtyExcluded:
+          type: boolean
+        Notes:
+          type: string
+          nullable: true
+        PlatformData:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/PlatformUserData"
+      required: [ID, OnlineViewingMinutes, IsSpecialtyExcluded, PlatformData]
+
+    PlatformUserData:
+      type: object
+      properties:
+        Platform:
+          type: string
+        ID:
+          type: string
+          nullable: true
+        Username:
+          type: string
+          nullable: true
+        DisplayName:
+          type: string
+          nullable: true
+        AvatarLink:
+          type: string
+          nullable: true
+        SubscriberBadgeLink:
+          type: string
+          nullable: true
+        RoleBadgeLink:
+          type: string
+          nullable: true
+        SpecialtyBadgeLink:
+          type: string
+          nullable: true
+        Roles:
+          type: array
+          items:
+            type: string
+
+    CounterContract:
+      type: object
+      properties:
+        ID:
+          type: string
+        Name:
+          type: string
+        Amount:
+          type: integer
+        ResetAmount:
+          type: integer
+      required: [ID, Name, Amount, ResetAmount]
+
+    CurrencyContract:
+      type: object
+      properties:
+        ID:
+          type: string
+        Name:
+          type: string
+        AcquireAmount:
+          type: integer
+        AcquireInterval:
+          type: integer
+        MaxAmount:
+          type: integer
+        IsEnabled:
+          type: boolean
+      required: [ID, Name, AcquireAmount, AcquireInterval, MaxAmount, IsEnabled]
+
+    InventoryContract:
+      type: object
+      properties:
+        ID:
+          type: string
+        Name:
+          type: string
+        DefaultMaxAmount:
+          type: integer
+        ShopEnabled:
+          type: boolean
+        ShopCurrencyId:
+          type: string
+          nullable: true
+      required: [ID, Name, DefaultMaxAmount, ShopEnabled]
+
+    InventoryItemContract:
+      type: object
+      properties:
+        ID:
+          type: string
+        Name:
+          type: string
+        MaxAmount:
+          type: integer
+        ShopBuyPrice:
+          type: integer
+        ShopSellPrice:
+          type: integer
+      required: [ID, Name, MaxAmount, ShopBuyPrice, ShopSellPrice]
+
+    VersionResponse:
+      type: object
+      properties:
+        version:
+          type: string
+        environment:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy]
+        uptime:
+          type: number
+        timestamp:
+          type: string
+          format: date-time
+
+paths:
+  /api/v2/status/version:
+    get:
+      tags: [Status]
+      summary: Get API version
+      security: []
+      operationId: getVersion
+      responses:
+        "200":
+          description: Version information
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VersionResponse"
+
+  /api/v2/status/health:
+    get:
+      tags: [Status]
+      summary: Health check
+      security: []
+      operationId: getHealth
+      responses:
+        "200":
+          description: Health status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+  /api/v2/commands:
+    get:
+      tags: [Commands]
+      summary: List commands
+      operationId: listCommands
+      parameters:
+        - name: skip
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 25
+      responses:
+        "200":
+          description: Paginated list of commands
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  TotalCount:
+                    type: integer
+                  Commands:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/CommandContract"
+        "401":
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+
+  /api/v2/commands/{commandId}:
+    get:
+      tags: [Commands]
+      summary: Get command by ID
+      operationId: getCommand
+      parameters:
+        - name: commandId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Command details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Command:
+                    $ref: "#/components/schemas/CommandContract"
+        "404":
+          description: Not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+    post:
+      tags: [Commands]
+      summary: Run command
+      operationId: runCommand
+      parameters:
+        - name: commandId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                platform:
+                  type: string
+                arguments:
+                  type: array
+                  items:
+                    type: string
+                specialIdentifiers:
+                  type: object
+                  additionalProperties:
+                    type: string
+                ignoreRequirements:
+                  type: boolean
+      responses:
+        "200":
+          description: Command enqueued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+
+  /api/v2/commands/{commandId}/state/{state}:
+    patch:
+      tags: [Commands]
+      summary: Update command state
+      operationId: updateCommandState
+      parameters:
+        - name: commandId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: state
+          in: path
+          required: true
+          schema:
+            type: integer
+            enum: [0, 1, 2]
+            description: "0=disable, 1=enable, 2=toggle"
+      responses:
+        "200":
+          description: Updated command
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Command:
+                    $ref: "#/components/schemas/CommandContract"
+
+  /api/v2/users:
+    get:
+      tags: [Users]
+      summary: List users
+      operationId: listUsers
+      parameters:
+        - name: skip
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 25
+      responses:
+        "200":
+          description: Paginated list of users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  TotalCount:
+                    type: integer
+                  Users:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/UserContract"
+
+  /api/v2/users/{userId}:
+    get:
+      tags: [Users]
+      summary: Get user by ID
+      operationId: getUser
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: User details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  User:
+                    $ref: "#/components/schemas/UserContract"
+    delete:
+      tags: [Users]
+      summary: Delete user
+      operationId: deleteUser
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: User deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+
+  /api/v2/users/add:
+    post:
+      tags: [Users]
+      summary: Add user by platform and username
+      operationId: addUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [Platform, Username]
+              properties:
+                Platform:
+                  type: string
+                Username:
+                  type: string
+      responses:
+        "201":
+          description: User created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  User:
+                    $ref: "#/components/schemas/UserContract"
+
+  /api/v2/counters:
+    get:
+      tags: [Counters]
+      summary: List counters
+      operationId: listCounters
+      parameters:
+        - name: skip
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 25
+      responses:
+        "200":
+          description: Paginated list of counters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  TotalCount:
+                    type: integer
+                  Counters:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/CounterContract"
+    post:
+      tags: [Counters]
+      summary: Create counter
+      operationId: createCounter
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                amount:
+                  type: integer
+                resetAmount:
+                  type: integer
+      responses:
+        "201":
+          description: Counter created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Counter:
+                    $ref: "#/components/schemas/CounterContract"
+
+  /api/v2/counters/{counterId}:
+    get:
+      tags: [Counters]
+      summary: Get counter by ID
+      operationId: getCounter
+      parameters:
+        - name: counterId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Counter details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Counter:
+                    $ref: "#/components/schemas/CounterContract"
+    patch:
+      tags: [Counters]
+      summary: Update counter
+      operationId: updateCounter
+      parameters:
+        - name: counterId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                amount:
+                  type: integer
+                resetAmount:
+                  type: integer
+      responses:
+        "200":
+          description: Updated counter
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Counter:
+                    $ref: "#/components/schemas/CounterContract"
+    delete:
+      tags: [Counters]
+      summary: Delete counter
+      operationId: deleteCounter
+      parameters:
+        - name: counterId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Counter deleted
+
+  /api/v2/currency:
+    get:
+      tags: [Currency]
+      summary: List currencies
+      operationId: listCurrencies
+      parameters:
+        - name: skip
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 25
+      responses:
+        "200":
+          description: Paginated list of currencies
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  TotalCount:
+                    type: integer
+                  Currencies:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/CurrencyContract"
+    post:
+      tags: [Currency]
+      summary: Create currency
+      operationId: createCurrency
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                acquireAmount:
+                  type: integer
+                acquireInterval:
+                  type: integer
+                maxAmount:
+                  type: integer
+      responses:
+        "201":
+          description: Currency created
+
+  /api/v2/currency/{currencyId}:
+    get:
+      tags: [Currency]
+      summary: Get currency by ID
+      operationId: getCurrency
+      parameters:
+        - name: currencyId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Currency details
+    delete:
+      tags: [Currency]
+      summary: Delete currency
+      operationId: deleteCurrency
+      parameters:
+        - name: currencyId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Currency deleted
+
+  /api/v2/currency/{currencyId}/user/{userId}:
+    get:
+      tags: [Currency]
+      summary: Get user currency balance
+      operationId: getUserCurrencyBalance
+      parameters:
+        - name: currencyId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: User balance
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Balance:
+                    type: integer
+
+  /api/v2/currency/{currencyId}/user/{userId}/adjust:
+    patch:
+      tags: [Currency]
+      summary: Adjust user currency balance
+      operationId: adjustUserCurrencyBalance
+      parameters:
+        - name: currencyId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount]
+              properties:
+                amount:
+                  type: integer
+                reason:
+                  type: string
+      responses:
+        "200":
+          description: Adjusted balance
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Balance:
+                    type: integer
+
+  /api/v2/inventory:
+    get:
+      tags: [Inventory]
+      summary: List inventories
+      operationId: listInventories
+      parameters:
+        - name: skip
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 25
+      responses:
+        "200":
+          description: Paginated list of inventories
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  TotalCount:
+                    type: integer
+                  Inventories:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/InventoryContract"
+    post:
+      tags: [Inventory]
+      summary: Create inventory
+      operationId: createInventory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                defaultMaxAmount:
+                  type: integer
+                shopEnabled:
+                  type: boolean
+                shopCurrencyId:
+                  type: string
+      responses:
+        "201":
+          description: Inventory created
+
+  /api/v2/inventory/{inventoryId}:
+    get:
+      tags: [Inventory]
+      summary: Get inventory by ID
+      operationId: getInventory
+      parameters:
+        - name: inventoryId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Inventory details
+    delete:
+      tags: [Inventory]
+      summary: Delete inventory
+      operationId: deleteInventory
+      parameters:
+        - name: inventoryId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Inventory deleted
+
+  /api/v2/inventory/{inventoryId}/items:
+    get:
+      tags: [Inventory]
+      summary: List inventory items
+      operationId: listInventoryItems
+      parameters:
+        - name: inventoryId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: skip
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 25
+      responses:
+        "200":
+          description: Paginated list of items
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  TotalCount:
+                    type: integer
+                  Items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/InventoryItemContract"
+    post:
+      tags: [Inventory]
+      summary: Create inventory item
+      operationId: createInventoryItem
+      parameters:
+        - name: inventoryId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                maxAmount:
+                  type: integer
+                shopBuyPrice:
+                  type: integer
+                shopSellPrice:
+                  type: integer
+      responses:
+        "201":
+          description: Item created

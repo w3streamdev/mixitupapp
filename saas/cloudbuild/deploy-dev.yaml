@@ -1,0 +1,95 @@
+steps:
+  # ─── Build API Container ────────────────────────────────────────────
+  - name: gcr.io/cloud-builders/docker
+    id: build-api
+    args:
+      - build
+      - -t
+      - $_REGION-docker.pkg.dev/$PROJECT_ID/mixitup-services/api:$SHORT_SHA
+      - -t
+      - $_REGION-docker.pkg.dev/$PROJECT_ID/mixitup-services/api:latest
+      - -f
+      - apps/api/Dockerfile
+      - .
+
+  # ─── Build Worker Container (parallel) ─────────────────────────────
+  - name: gcr.io/cloud-builders/docker
+    id: build-worker
+    args:
+      - build
+      - -t
+      - $_REGION-docker.pkg.dev/$PROJECT_ID/mixitup-services/worker:$SHORT_SHA
+      - -t
+      - $_REGION-docker.pkg.dev/$PROJECT_ID/mixitup-services/worker:latest
+      - -f
+      - apps/worker/Dockerfile
+      - .
+    waitFor: ['-']
+
+  # ─── Push API Image ────────────────────────────────────────────────
+  - name: gcr.io/cloud-builders/docker
+    id: push-api
+    args: [push, --all-tags, "$_REGION-docker.pkg.dev/$PROJECT_ID/mixitup-services/api"]
+    waitFor: [build-api]
+
+  # ─── Push Worker Image ─────────────────────────────────────────────
+  - name: gcr.io/cloud-builders/docker
+    id: push-worker
+    args: [push, --all-tags, "$_REGION-docker.pkg.dev/$PROJECT_ID/mixitup-services/worker"]
+    waitFor: [build-worker]
+
+  # ─── Deploy API to Cloud Run ────────────────────────────────────────
+  - name: gcr.io/cloud-builders/gcloud
+    id: deploy-api
+    args:
+      - run
+      - deploy
+      - mixitup-api-dev
+      - --image=$_REGION-docker.pkg.dev/$PROJECT_ID/mixitup-services/api:$SHORT_SHA
+      - --region=$_REGION
+      - --platform=managed
+      - --service-account=mixitup-api-dev@$PROJECT_ID.iam.gserviceaccount.com
+      - --add-cloudsql-instances=connect3-391119:us-central1:mixitup-pg-dev
+      - --set-secrets=DATABASE_URL=database-url:latest,REDIS_URL=redis-url:latest,TWITCH_CLIENT_ID=twitch-client-id:latest,TWITCH_CLIENT_SECRET=twitch-client-secret:latest,TWITCH_EVENTSUB_SECRET=twitch-eventsub-secret:latest
+      - --set-env-vars=NODE_ENV=production,LOG_LEVEL=info,APP_REGION=$_REGION,GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=$_REGION,CORS_ORIGIN=*,APP_VERSION=0.1.0
+      - --min-instances=0
+      - --max-instances=4
+      - --port=8080
+      - --memory=512Mi
+      - --cpu=1
+      - --allow-unauthenticated
+      - --quiet
+    waitFor: [push-api]
+
+  # ─── Deploy Worker to Cloud Run ─────────────────────────────────────
+  - name: gcr.io/cloud-builders/gcloud
+    id: deploy-worker
+    args:
+      - run
+      - deploy
+      - mixitup-worker-dev
+      - --image=$_REGION-docker.pkg.dev/$PROJECT_ID/mixitup-services/worker:$SHORT_SHA
+      - --region=$_REGION
+      - --platform=managed
+      - --service-account=mixitup-worker-dev@$PROJECT_ID.iam.gserviceaccount.com
+      - --add-cloudsql-instances=connect3-391119:us-central1:mixitup-pg-dev
+      - --set-secrets=DATABASE_URL=database-url:latest,REDIS_URL=redis-url:latest,TWITCH_CLIENT_ID=twitch-client-id:latest,TWITCH_CLIENT_SECRET=twitch-client-secret:latest
+      - --set-env-vars=NODE_ENV=production,LOG_LEVEL=info,GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=$_REGION
+      - --min-instances=1
+      - --max-instances=2
+      - --port=8080
+      - --memory=512Mi
+      - --cpu=1
+      - --no-cpu-throttling
+      - --no-allow-unauthenticated
+      - --quiet
+    waitFor: [push-worker]
+
+substitutions:
+  _REGION: us-central1
+
+timeout: '1800s'
+
+options:
+  logging: GCS_ONLY
+  defaultLogsBucketBehavior: REGIONAL_USER_OWNED_BUCKET

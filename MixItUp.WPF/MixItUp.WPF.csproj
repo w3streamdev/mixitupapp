@@ -1,0 +1,188 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+	<RuntimeIdentifier>win-x64</RuntimeIdentifier>
+	<SelfContained>true</SelfContained>
+    <OutputType>WinExe</OutputType>
+    <AssemblyName>MixItUp</AssemblyName>
+    <AssemblyTitle>MixItUp.Client</AssemblyTitle>
+    <Company>Blazing Cacti LLC</Company>
+		<Copyright>Copyright © 2026 Blazing Cacti LLC, All Rights Reserved.</Copyright>
+    <AssemblyVersion>1.6.30.0</AssemblyVersion>
+    <FileVersion>1.6.30.0</FileVersion>
+		<Version>1.6.0</Version>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <PublishUrl>publish\</PublishUrl>
+    <Install>true</Install>
+    <InstallFrom>Disk</InstallFrom>
+    <UpdateEnabled>false</UpdateEnabled>
+    <UpdateMode>Foreground</UpdateMode>
+    <UpdateInterval>7</UpdateInterval>
+    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
+    <UpdatePeriodically>false</UpdatePeriodically>
+    <UpdateRequired>false</UpdateRequired>
+    <MapFileExtensions>true</MapFileExtensions>
+    <ApplicationRevision>0</ApplicationRevision>
+    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
+    <UseApplicationTrust>false</UseApplicationTrust>
+    <BootstrapperEnabled>true</BootstrapperEnabled>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <UseWPF>true</UseWPF>
+    <Configurations>Ad-Hoc;AppStore;Debug;Release</Configurations>
+    <ApplicationIcon>Logo.ico</ApplicationIcon>
+    <RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
+    <StartupObject>MixItUp.WPF.Program</StartupObject>
+    <PostBuildEvent Condition="'$(OS)' == 'Windows_NT'">del $(TargetDir)ApplicationSettings.json
+rmdir /Q /S $(TargetDir)Settings\
+rmdir /Q /S $(TargetDir)Logs\
+rmdir /Q /S $(TargetDir)ChatEventLogs\
+rmdir /Q /S $(TargetDir)Counters\
+del $(TargetDir)MixItUp.zip</PostBuildEvent>
+  <NoWarn>CA1416</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+  </PropertyGroup>
+  <ItemGroup Label="Framework References">
+    		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup Label="Project References">
+  <ProjectReference Include="..\APIs\MixItUp.API\MixItUp.API.csproj" />
+    <ProjectReference Include="..\MixItUp.Base\MixItUp.Base.csproj" />
+    <ProjectReference Include="..\MixItUp.Reporter\MixItUp.Reporter.csproj" />
+    <ProjectReference Include="..\MixItUp.SignalR.Client\MixItUp.SignalR.Client.csproj" />
+  </ItemGroup>
+	<ItemGroup Label="Package References">
+		<PackageReference Include="AvalonEdit" Version="6.3.1.120" />
+		<PackageReference Include="AWSSDK.Polly" Version="3.7.107.6" />
+		<PackageReference Include="CacheManager.SystemRuntimeCaching" Version="2.0.0" />
+		<PackageReference Include="EntityFramework" Version="6.5.1" />
+		<PackageReference Include="ExcelDataReader" Version="3.8.0" />
+		<PackageReference Include="ExcelDataReader.DataSet" Version="3.8.0" />
+		<PackageReference Include="gong-wpf-dragdrop" Version="4.0.0" />
+		<PackageReference Include="Google.Apis.YouTube.v3" Version="1.73.0.4029" />
+		<PackageReference Include="Google.Apis.YouTubePartner.v1" Version="1.35.1.1334" />
+		<PackageReference Include="H.Socket.IO" Version="1.1.7.1" />
+		<PackageReference Include="ID3" Version="0.6.0" />
+		<PackageReference Include="Jace" Version="1.0.0" />
+		<PackageReference Include="MaterialDesignThemes" Version="5.2.1" />
+		<PackageReference Include="MdXaml" Version="1.27.0" />
+		<PackageReference Include="MdXaml.Plugins" Version="1.27.0" />
+		<PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.15.0" />
+		<PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.15.0" />
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" />
+		<PackageReference Include="Microsoft.CognitiveServices.Speech" Version="1.47.0" />
+		<PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.2" />
+		<PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
+		<PackageReference Include="NAudio" Version="2.2.1" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+		<PackageReference Include="obs-websocket-dotnet" Version="4.9.1" />
+		<PackageReference Include="ovrstream-client-csharp" Version="0.0.2" />
+		<PackageReference Include="PixiEditor.ColorPicker" Version="3.4.2.2" />
+		<PackageReference Include="SixLabors.ImageSharp" Version="2.1.12" />
+		<PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.2" />
+		<PackageReference Include="System.IO.Ports" Version="10.0.2" />
+		<PackageReference Include="System.Management" Version="10.0.2" />
+		<PackageReference Include="System.Speech" Version="10.0.2" />
+		<PackageReference Include="WriteableBitmapEx" Version="1.6.9" />
+	</ItemGroup>
+	<ItemGroup>
+    <AppDesigner Include="Properties\" />
+    <None Update="Installer.nsi">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Mix It Up.link">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+	</ItemGroup>
+  <ItemGroup Label="Resources">
+    <Resource Include="Logo.png" />
+    <Resource Include="Assets\Images\mixitup_logo-full_color-light_xl.png" />
+    <Resource Include="Assets\Images\CommandExample.png" />
+    <Resource Include="Assets\Images\ExampleRecipe.png" />   
+    <Resource Include="Assets\Images\discord-color_sm.png" />
+    <Resource Include="Assets\Images\github-color_sm.png" />
+    <Resource Include="Assets\Images\patreon-color_sm.png" />
+    <Resource Include="Assets\Images\trovo-color_lg.png" />
+    <Resource Include="Assets\Images\trovo-color_sm.png" />
+    <Resource Include="Assets\Images\trovo-dark_lg.png" />
+    <Resource Include="Assets\Images\twitch-color_lg.png" />
+    <Resource Include="Assets\Images\twitch-color_sm.png" />
+    <Resource Include="Assets\Images\twitch-dark_lg.png" />
+    <Resource Include="Assets\Images\twitter-color_sm.png" /> 
+    <Resource Include="Assets\Images\wiki-color_sm.png" />  
+    <Resource Include="Assets\Images\youtube-color_lg.png" />
+    <Resource Include="Assets\Images\youtube-color_sm.png" />
+    <Resource Include="Assets\Images\youtube-dark_lg.png" />
+    <Resource Include="Assets\Images\youtube-light_sm.png" />
+  </ItemGroup>
+  <ItemGroup Label="Content">
+    <Content Include="Logo.ico">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\CHANGELOG.md">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\CommunityBannedWords.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Sounds\WheelClick.mp3">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Sounds\Ariel.mp3">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Sounds\Carme.mp3">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Sounds\Ceres.mp3">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Sounds\Computer Chime.mp3">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Sounds\Doorbell.mp3">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Sounds\Elara.mp3">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Sounds\Europa.mp3">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Sounds\High Beeps.mp3">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Sounds\Io.mp3">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Sounds\Lapetus.mp3">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Sounds\Level Up.mp3">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Sounds\Low Beeps.mp3">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Sounds\Rhea.mp3">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Sounds\Salacia.mp3">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Sounds\Robot SMS.mp3">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Sounds\Tethys.mp3">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Sounds\Titan.mp3">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Sounds\Watch Alarm.mp3">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup> 
+</Project>

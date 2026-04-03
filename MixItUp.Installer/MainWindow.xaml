@@ -1,0 +1,69 @@
+﻿<Window
+    x:Class="MixItUp.Installer.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:MaterialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:MixItUp.Installer"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    Title="Mix It Up - Installer"
+    Width="450"
+    Height="200"
+    Background="{DynamicResource MaterialDesignPaper}"
+    FontFamily="pack://application:,,,/MaterialDesignThemes.Wpf;component/Resources/Roboto/#Roboto"
+    Icon="./Logo.ico"
+    TextElement.FontSize="14"
+    TextElement.FontWeight="Medium"
+    TextElement.Foreground="{DynamicResource MaterialDesignBody}"
+    mc:Ignorable="d">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries />
+
+            <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Grid>
+        <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="25" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0" HorizontalAlignment="Center">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock
+                    Grid.Column="0"
+                    Text="{Binding DisplayText1}"
+                    TextWrapping="Wrap" />
+                <TextBlock
+                    Grid.Column="1"
+                    Margin="10,0,0,0"
+                    Visibility="{Binding ShowHyperlinkAddress, Converter={StaticResource BooleanToVisibilityConverter}}"><Hyperlink NavigateUri="{Binding HyperlinkAddress}" RequestNavigate="Hyperlink_RequestNavigate">Open File</Hyperlink></TextBlock>
+
+            </Grid>
+
+            <ProgressBar
+                Grid.Row="2"
+                Width="250"
+                Height="20"
+                HorizontalAlignment="Center"
+                IsIndeterminate="{Binding IsOperationIndeterminate, FallbackValue=True}"
+                Visibility="{Binding IsOperationBeingPerformed, Converter={StaticResource BooleanToVisibilityConverter}}"
+                Value="{Binding OperationProgress, Mode=OneWay, FallbackValue=0}" />
+            <TextBlock
+                Grid.Row="2"
+                Width="380"
+                HorizontalAlignment="Center"
+                Text="{Binding DisplayText2}"
+                TextWrapping="Wrap"
+                Visibility="{Binding ErrorOccurred, Converter={StaticResource BooleanToVisibilityConverter}}" />
+        </Grid>
+    </Grid>
+</Window>

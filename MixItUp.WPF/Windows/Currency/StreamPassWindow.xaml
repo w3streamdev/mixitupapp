@@ -1,0 +1,425 @@
+﻿<Windows:LoadingWindowBase
+    x:Class="MixItUp.WPF.Windows.Currency.StreamPassWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:CommandsControls="clr-namespace:MixItUp.WPF.Controls.Commands"
+    xmlns:Controls="clr-namespace:MixItUp.WPF.Controls"
+    xmlns:MaterialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+    xmlns:System="clr-namespace:System;assembly=System.Runtime"
+    xmlns:Windows="clr-namespace:MixItUp.WPF.Windows"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:resx="clr-namespace:MixItUp.Base;assembly=MixItUp.Base"
+    xmlns:util="clr-namespace:MixItUp.WPF.Util"
+    Title="{x:Static resx:Resources.CustomizeStreamPass}"
+    Width="800"
+    Height="600"
+    FontFamily="{MaterialDesign:MaterialDesignFont}"
+    Icon="./../../Logo.ico"
+    Style="{StaticResource MaterialDesignWindow}"
+    TextElement.FontSize="14"
+    TextElement.FontWeight="Medium"
+    mc:Ignorable="d">
+    <Windows:LoadingWindowBase.Resources>
+        <util:LocalizationConverter x:Key="LocalizationConverter" />
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+        <MaterialDesign:NullableToVisibilityConverter x:Key="NullableToVisibilityConverter" />
+    </Windows:LoadingWindowBase.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <MaterialDesign:DialogHost x:Name="MDDialogHost" Identifier="RootDialog" />
+
+        <ScrollViewer Grid.Row="0">
+            <Grid Margin="10">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="10" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="10" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="10" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <GroupBox
+                    Grid.Row="0"
+                    Width="700"
+                    Header="{x:Static resx:Resources.Details}">
+                    <Grid Margin="10">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="20" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <Grid Grid.Row="0" HorizontalAlignment="Center">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="30" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="30" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <TextBox
+                                Grid.Column="0"
+                                Width="300"
+                                MaterialDesign:HintAssist.Hint="{x:Static resx:Resources.Name}"
+                                Style="{StaticResource MaterialDesignFloatingHintTextBox}"
+                                Text="{Binding Name}" />
+
+                            <ComboBox
+                                Grid.Column="2"
+                                Width="120"
+                                MaterialDesign:HintAssist.Hint="{x:Static resx:Resources.Permissions}"
+                                ItemsSource="{Binding Permissions}"
+                                SelectedItem="{Binding Permission}"
+                                Style="{StaticResource MaterialDesignFloatingHintComboBox}">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Converter={StaticResource LocalizationConverter}}" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+
+                            <TextBox
+                                Grid.Column="4"
+                                Width="100"
+                                MaterialDesign:HintAssist.Hint="{x:Static resx:Resources.MaxLevel}"
+                                Style="{StaticResource MaterialDesignFloatingHintTextBox}"
+                                Text="{Binding MaxLevel}" />
+                        </Grid>
+
+                        <Grid Grid.Row="2" HorizontalAlignment="Center">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="30" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="30" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="30" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <TextBox
+                                Grid.Column="0"
+                                Width="100"
+                                MaterialDesign:HintAssist.Hint="{x:Static resx:Resources.PointsForLevelUp}"
+                                Style="{StaticResource MaterialDesignFloatingHintTextBox}"
+                                Text="{Binding PointsForLevelUp}" />
+
+                            <TextBox
+                                Grid.Column="2"
+                                MaterialDesign:HintAssist.Hint="{x:Static resx:Resources.SubMultiplier}"
+                                Style="{StaticResource MaterialDesignFloatingHintTextBox}"
+                                Text="{Binding SubMultiplier}" />
+
+                            <TextBox
+                                Grid.Column="4"
+                                MaterialDesign:HintAssist.Hint="{x:Static resx:Resources.MinimumChannelActivityMins}"
+                                Style="{StaticResource MaterialDesignFloatingHintTextBox}"
+                                Text="{Binding MinimumActiveRate}" />
+
+                            <Button
+                                Grid.Column="6"
+                                Command="{Binding ManualResetCommand}"
+                                Content="{x:Static resx:Resources.ManualReset}" />
+                        </Grid>
+                    </Grid>
+                </GroupBox>
+
+                <Grid Grid.Row="2" HorizontalAlignment="Center">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="10" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <GroupBox
+                        Grid.Column="0"
+                        Width="210"
+                        Height="160"
+                        Header="{x:Static resx:Resources.DateRange}">
+                        <Grid Margin="10" VerticalAlignment="Center">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="10" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="10" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="20" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <Controls:IconButton
+                                x:Name="StartDateButton"
+                                Grid.Row="0"
+                                Grid.Column="0"
+                                HorizontalAlignment="Center"
+                                Click="StartDateButton_Click"
+                                Icon="Calendar" />
+
+                            <TextBlock
+                                Grid.Row="0"
+                                Grid.Column="2"
+                                Margin="0,0,0,5"
+                                VerticalAlignment="Bottom"
+                                Text="{Binding Source={x:Static resx:Resources.Start}, StringFormat={x:Static resx:Resources.ColumnHeaderFormat}}" />
+
+                            <TextBlock
+                                Grid.Row="0"
+                                Grid.Column="4"
+                                Margin="0,0,0,5"
+                                VerticalAlignment="Bottom"
+                                Text="{Binding StartDateString}" />
+
+
+                            <Controls:IconButton
+                                x:Name="EndDateButton"
+                                Grid.Row="2"
+                                Grid.Column="0"
+                                HorizontalAlignment="Center"
+                                Click="EndDateButton_Click"
+                                Icon="Calendar" />
+
+                            <TextBlock
+                                Grid.Row="2"
+                                Grid.Column="2"
+                                Margin="0,0,0,5"
+                                VerticalAlignment="Bottom"
+                                Text="{Binding Source={x:Static resx:Resources.End}, StringFormat={x:Static resx:Resources.ColumnHeaderFormat}}" />
+
+                            <TextBlock
+                                Grid.Row="2"
+                                Grid.Column="4"
+                                Margin="0,0,0,5"
+                                VerticalAlignment="Bottom"
+                                Text="{Binding EndDateString}" />
+                        </Grid>
+                    </GroupBox>
+
+                    <GroupBox
+                        Grid.Column="2"
+                        Width="480"
+                        Height="160"
+                        Header="{x:Static resx:Resources.PointRates}">
+                        <Grid VerticalAlignment="Center">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="20" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <Grid Grid.Row="0" HorizontalAlignment="Center">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="20" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="20" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <Grid Grid.Column="0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="10" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="5" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="5" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock
+                                        Grid.Column="0"
+                                        Margin="0,0,0,5"
+                                        VerticalAlignment="Bottom"
+                                        Text="{x:Static resx:Resources.Viewing}" />
+
+                                    <TextBox
+                                        Grid.Column="2"
+                                        MaterialDesign:HintAssist.Hint="{x:Static resx:Resources.Amount}"
+                                        Style="{StaticResource MaterialDesignFloatingHintTextBox}"
+                                        Text="{Binding ViewingRateAmount}" />
+
+                                    <TextBlock
+                                        Grid.Column="4"
+                                        Margin="0,20,0,0"
+                                        VerticalAlignment="Center">
+                                        /
+                                    </TextBlock>
+
+                                    <TextBox
+                                        Grid.Column="6"
+                                        MaterialDesign:HintAssist.Hint="{x:Static resx:Resources.Minutes}"
+                                        Style="{StaticResource MaterialDesignFloatingHintTextBox}"
+                                        Text="{Binding ViewingRateMinutes}" />
+                                </Grid>
+
+                                <TextBox
+                                    Grid.Column="2"
+                                    MaterialDesign:HintAssist.Hint="{x:Static resx:Resources.FollowBonus}"
+                                    Style="{StaticResource MaterialDesignFloatingHintTextBox}"
+                                    Text="{Binding FollowBonus}" />
+
+                                <TextBox
+                                    Grid.Column="4"
+                                    MaterialDesign:HintAssist.Hint="{x:Static resx:Resources.HostBonus}"
+                                    Style="{StaticResource MaterialDesignFloatingHintTextBox}"
+                                    Text="{Binding HostBonus}" />
+
+                            </Grid>
+
+                            <Grid Grid.Row="2" HorizontalAlignment="Center">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="20" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="20" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <TextBox
+                                    Grid.Column="0"
+                                    MaterialDesign:HintAssist.Hint="{x:Static resx:Resources.SubscribeBonus}"
+                                    Style="{StaticResource MaterialDesignFloatingHintTextBox}"
+                                    Text="{Binding SubscribeBonus}" />
+
+                                <TextBox
+                                    Grid.Column="2"
+                                    MaterialDesign:HintAssist.Hint="{x:Static resx:Resources.DonationBonus}"
+                                    Style="{StaticResource MaterialDesignFloatingHintTextBox}"
+                                    Text="{Binding DonationBonus}" />
+
+                                <TextBox
+                                    Grid.Column="4"
+                                    MaterialDesign:HintAssist.Hint="{x:Static resx:Resources.BitsBonus}"
+                                    Style="{StaticResource MaterialDesignFloatingHintTextBox}"
+                                    Text="{Binding BitsBonus}" />
+                            </Grid>
+                        </Grid>
+                    </GroupBox>
+                </Grid>
+
+                <GroupBox
+                    Grid.Row="4"
+                    Width="700"
+                    HorizontalAlignment="Center"
+                    Header="{x:Static resx:Resources.LevelUpCommands}">
+                    <Grid Margin="10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="10" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <Border
+                            Grid.Column="0"
+                            HorizontalAlignment="Center"
+                            BorderBrush="{DynamicResource MaterialDesign.Brush.Foreground}"
+                            Style="{StaticResource DefaultBorder}">
+                            <ScrollViewer
+                                Width="340"
+                                Height="200"
+                                HorizontalScrollBarVisibility="Auto"
+                                VerticalScrollBarVisibility="Visible">
+                                <DataGrid
+                                    HorizontalContentAlignment="Center"
+                                    AutoGenerateColumns="False"
+                                    CellStyle="{StaticResource StandardDataGridCell}"
+                                    ItemsSource="{Binding CustomLevelUpCommands}"
+                                    Style="{StaticResource StandardDataGrid}">
+                                    <DataGrid.Columns>
+                                        <DataGridTemplateColumn
+                                            Width="70"
+                                            Header="{x:Static resx:Resources.Level}"
+                                            IsReadOnly="True">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock HorizontalAlignment="Center" Text="{Binding Level}" />
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+                                        <DataGridTemplateColumn Width="250" Header="{x:Static resx:Resources.Command}">
+                                            <DataGridTemplateColumn.CellStyle>
+                                                <Style BasedOn="{StaticResource StandardDataGridCell}" TargetType="DataGridCell">
+                                                    <Setter Property="Padding" Value="5,0,5,0" />
+                                                </Style>
+                                            </DataGridTemplateColumn.CellStyle>
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <CommandsControls:CommandListingButtonsControl
+                                                        x:Name="LevelCommandButtons"
+                                                        HorizontalAlignment="Center"
+                                                        DeleteClicked="LevelCommandButtons_DeleteClicked"
+                                                        EditClicked="LevelCommandButtons_EditClicked" />
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </ScrollViewer>
+                        </Border>
+
+                        <Grid Grid.Column="2" VerticalAlignment="Center">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="40" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <Grid Grid.Row="0" HorizontalAlignment="Center">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="10" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <TextBox
+                                    Grid.Column="0"
+                                    Width="60"
+                                    MaterialDesign:HintAssist.Hint="{x:Static resx:Resources.LevelNumber}"
+                                    Style="{StaticResource MaterialDesignFloatingHintTextBox}"
+                                    Text="{Binding CustomLevelUpNumber}" />
+
+                                <Button
+                                    x:Name="AddCustomLevelUpButtom"
+                                    Grid.Column="2"
+                                    Click="AddCustomLevelUpButtom_Click"
+                                    Content="{x:Static resx:Resources.AddCustomLevelUp}" />
+                            </Grid>
+
+                            <GroupBox
+                                Grid.Row="2"
+                                Width="220"
+                                HorizontalAlignment="Center"
+                                Header="{x:Static resx:Resources.DefaultLevelUpCommand}">
+                                <CommandsControls:CommandListingButtonsControl
+                                    HorizontalAlignment="Center"
+                                    DataContext="{Binding DefaultLevelUpCommand}"
+                                    EditClicked="DefaultLevelUpCommandButtons_EditClicked"
+                                    HideDeleteButton="True" />
+                            </GroupBox>
+                        </Grid>
+                    </Grid>
+                </GroupBox>
+
+                <Controls:IconButton
+                    x:Name="SaveButton"
+                    Grid.Row="6"
+                    Width="80"
+                    HorizontalAlignment="Center"
+                    Click="SaveButton_Click"
+                    Icon="ContentSave" />
+            </Grid>
+        </ScrollViewer>
+
+        <Controls:LoadingStatusBar x:Name="StatusBar" Grid.Row="1" />
+    </Grid>
+</Windows:LoadingWindowBase>

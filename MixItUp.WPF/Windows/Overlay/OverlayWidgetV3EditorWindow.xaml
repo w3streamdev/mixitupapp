@@ -1,0 +1,260 @@
+﻿<Windows:LoadingWindowBase
+    x:Class="MixItUp.WPF.Windows.Overlay.OverlayWidgetV3EditorWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:Controls="clr-namespace:MixItUp.WPF.Controls"
+    xmlns:MaterialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+    xmlns:OverlayControls="clr-namespace:MixItUp.WPF.Controls.Overlay"
+    xmlns:Util="clr-namespace:MixItUp.WPF.Util"
+    xmlns:Windows="clr-namespace:MixItUp.WPF.Windows"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:MixItUp.WPF.Windows.Overlay"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:resx="clr-namespace:MixItUp.Base;assembly=MixItUp.Base"
+    Title="{x:Static resx:Resources.OverlayWidgetEditor}"
+    Width="800"
+    Height="600"
+    FontFamily="{MaterialDesign:MaterialDesignFont}"
+    Style="{StaticResource MaterialDesignWindow}"
+    TextElement.FontSize="14"
+    TextElement.FontWeight="Medium"
+    mc:Ignorable="d">
+    <Windows:LoadingWindowBase.Resources>
+        <Util:LocalizationConverter x:Key="LocalizationConverter" />
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+    </Windows:LoadingWindowBase.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="10" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <MaterialDesign:DialogHost x:Name="MDDialogHost" Identifier="RootDialog" />
+
+        <ScrollViewer Grid.Row="0">
+            <Grid Margin="10">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="20" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="20" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="20" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <TextBox
+                        Grid.Column="0"
+                        MaterialDesign:HintAssist.Hint="{x:Static resx:Resources.Name}"
+                        Style="{StaticResource MaterialDesignFloatingHintTextBox}"
+                        Text="{Binding Name}" />
+
+                    <ComboBox
+                        Grid.Column="2"
+                        MaterialDesign:HintAssist.Hint="{x:Static resx:Resources.DisplayOption}"
+                        ItemsSource="{Binding DisplayOptions}"
+                        SelectedItem="{Binding SelectedDisplayOption}"
+                        Style="{StaticResource MaterialDesignFloatingHintComboBox}">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Converter={StaticResource LocalizationConverter}}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+
+                    <ComboBox
+                        Grid.Column="4"
+                        MaterialDesign:HintAssist.Hint="{x:Static resx:Resources.OverlayEndpoints}"
+                        DisplayMemberPath="Name"
+                        ItemsSource="{Binding OverlayEndpoints}"
+                        SelectedItem="{Binding SelectedOverlayEndpoint}"
+                        Style="{StaticResource MaterialDesignFloatingHintComboBox}"
+                        Visibility="{Binding IsDisplayOptionOverlayEndpoint, Converter={StaticResource BooleanToVisibilityConverter}}" />
+
+                    <Controls:IconButton
+                        x:Name="OldHTMLButton"
+                        Grid.Column="5"
+                        Margin="10,0,0,0"
+                        Click="OldHTMLButton_Click"
+                        Icon="History"
+                        ToolTip="{x:Static resx:Resources.OldHTML}"
+                        Visibility="{Binding ShowOldCustomHTML, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                </Grid>
+
+                <Border Grid.Row="2" Style="{StaticResource DefaultBorder}">
+                    <TabControl
+                        SnapsToDevicePixels="True"
+                        Style="{StaticResource MaterialDesignFilledTabControl}"
+                        TabStripPlacement="Top">
+                        <TabItem HorizontalAlignment="Stretch" Header="{x:Static resx:Resources.Details}">
+                            <Grid Margin="10">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <ContentControl
+                                    x:Name="InnerContent"
+                                    Grid.Row="0"
+                                    DataContext="{Binding Item}" />
+
+                                <Grid
+                                    Grid.Row="1"
+                                    Margin="0,10,0,0"
+                                    Visibility="{Binding IsBasicWidget}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBox
+                                        Grid.Column="0"
+                                        Width="150"
+                                        MaterialDesign:HintAssist.Hint="{x:Static resx:Resources.RefreshTimeSecs}"
+                                        Style="{StaticResource MaterialDesignFloatingHintTextBox}"
+                                        Text="{Binding RefreshTime}"
+                                        Visibility="{Binding IsBasicWidget, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                </Grid>
+                            </Grid>
+                        </TabItem>
+
+                        <TabItem HorizontalContentAlignment="Stretch" Header="{x:Static resx:Resources.Position}">
+                            <OverlayControls:OverlayPositionV3Control
+                                x:Name="Position"
+                                Margin="10"
+                                DataContext="{Binding Position}" />
+                        </TabItem>
+
+                        <TabItem Header="{x:Static resx:Resources.Animation}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <StackPanel
+                                    x:Name="AnimationsMayNotWork"
+                                    Grid.Row="0"
+                                    Orientation="Vertical">
+                                    <TextBlock
+                                        HorizontalAlignment="Center"
+                                        Foreground="Red"
+                                        Text="{x:Static resx:Resources.OverlayWarning1}" />
+                                    <TextBlock
+                                        HorizontalAlignment="Center"
+                                        Foreground="Red"
+                                        Text="{x:Static resx:Resources.OverlayWarning2}" />
+                                    <TextBlock HorizontalAlignment="Center">
+                                        <Hyperlink NavigateUri="https://wiki.mixitupapp.com/services/overlay#windows-settings-overlay-animation-issue" RequestNavigate="Hyperlink_RequestNavigate">
+                                            <TextBlock Text="{x:Static resx:Resources.OverlayWarning3}" />
+                                        </Hyperlink>
+                                    </TextBlock>
+                                </StackPanel>
+
+                                <ItemsControl Grid.Row="3" ItemsSource="{Binding Animations}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <OverlayControls:OverlayAnimationV3Control />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Grid>
+                        </TabItem>
+
+                        <TabItem Header="{Binding HTMLHeader}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <Border Style="{StaticResource DefaultBorder}">
+                                    <TextBox
+                                        MinHeight="250"
+                                        Style="{StaticResource OverlayEditorMultiLineTextBox}"
+                                        Text="{Binding HTML}" />
+                                </Border>
+                            </Grid>
+                        </TabItem>
+
+                        <TabItem Header="{Binding CSSHeader}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <Border Style="{StaticResource DefaultBorder}">
+                                    <TextBox
+                                        MinHeight="250"
+                                        Style="{StaticResource OverlayEditorMultiLineTextBox}"
+                                        Text="{Binding CSS}" />
+                                </Border>
+                            </Grid>
+                        </TabItem>
+
+                        <TabItem Header="{Binding JavascriptHeader}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <Border Style="{StaticResource DefaultBorder}">
+                                    <TextBox
+                                        MinHeight="250"
+                                        Style="{StaticResource OverlayEditorMultiLineTextBox}"
+                                        Text="{Binding Javascript}" />
+                                </Border>
+                            </Grid>
+                        </TabItem>
+                    </TabControl>
+
+                </Border>
+            </Grid>
+        </ScrollViewer>
+
+        <Grid Grid.Row="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="20" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0" HorizontalAlignment="Center">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="20" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="20" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <Controls:IconButton
+                    Grid.Column="0"
+                    Command="{Binding SaveCommand}"
+                    Icon="ContentSave"
+                    ToolTip="{x:Static resx:Resources.Save}" />
+
+                <Controls:IconButton
+                    Grid.Column="2"
+                    Command="{Binding TestCommand}"
+                    Icon="Play"
+                    IsEnabled="{Binding IsTestable}"
+                    ToolTip="{x:Static resx:Resources.TestCommand}" />
+
+                <Controls:IconButton
+                    Grid.Column="4"
+                    Command="{Binding ExportCommand}"
+                    Icon="Export"
+                    ToolTip="{x:Static resx:Resources.ExportData}" />
+            </Grid>
+
+            <Controls:LoadingStatusBar x:Name="StatusBar" Grid.Row="2" />
+        </Grid>
+    </Grid>
+</Windows:LoadingWindowBase>

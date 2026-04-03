@@ -1,0 +1,305 @@
+﻿<Windows:LoadingWindowBase
+    x:Class="MixItUp.WPF.Windows.Currency.RedemptionStoreWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:CommandsControls="clr-namespace:MixItUp.WPF.Controls.Commands"
+    xmlns:Controls="clr-namespace:MixItUp.WPF.Controls"
+    xmlns:MaterialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+    xmlns:RequirementsControls="clr-namespace:MixItUp.WPF.Controls.Requirements"
+    xmlns:System="clr-namespace:System;assembly=System.Runtime"
+    xmlns:Windows="clr-namespace:MixItUp.WPF.Windows"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:resx="clr-namespace:MixItUp.Base;assembly=MixItUp.Base"
+    xmlns:util="clr-namespace:MixItUp.WPF.Util"
+    Title="Customize Redemption Store"
+    Width="800"
+    Height="780"
+    FontFamily="{MaterialDesign:MaterialDesignFont}"
+    Icon="./../../Logo.ico"
+    Style="{StaticResource MaterialDesignWindow}"
+    TextElement.FontSize="14"
+    TextElement.FontWeight="Medium"
+    mc:Ignorable="d">
+    <Windows:LoadingWindowBase.Resources>
+        <util:LocalizationConverter x:Key="LocalizationConverter" />
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+    </Windows:LoadingWindowBase.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <MaterialDesign:DialogHost x:Name="MDDialogHost" Identifier="RootDialog" />
+
+        <ScrollViewer Grid.Row="0">
+            <Grid Margin="10">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="20" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="20" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <GroupBox Grid.Row="0" Header="{x:Static resx:Resources.Products}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="20" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="20" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <Border
+                            Grid.Row="0"
+                            HorizontalAlignment="Center"
+                            BorderBrush="{DynamicResource MaterialDesign.Brush.Foreground}"
+                            Style="{StaticResource DefaultBorder}">
+                            <ScrollViewer
+                                Width="700"
+                                Height="300"
+                                VerticalScrollBarVisibility="Visible">
+                                <DataGrid
+                                    HorizontalContentAlignment="Center"
+                                    CellStyle="{StaticResource StandardDataGridCell}"
+                                    ItemsSource="{Binding Products}"
+                                    Style="{StaticResource StandardDataGrid}">
+                                    <DataGrid.Columns>
+                                        <DataGridTemplateColumn
+                                            Width="*"
+                                            Header="{x:Static resx:Resources.Name}"
+                                            IsReadOnly="True">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding Name}" />
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+                                        <DataGridTemplateColumn Width="90" Header="{x:Static resx:Resources.Quantity}">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding Quantity}" />
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+                                        <DataGridTemplateColumn Width="190" Header="{x:Static resx:Resources.CustomRedemption}">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <Grid>
+                                                        <Button
+                                                            x:Name="CustomProductNewCommandButton"
+                                                            Click="CustomProductNewCommandButton_Click"
+                                                            Content="{x:Static resx:Resources.AddCommand}"
+                                                            Visibility="{Binding CustomCommandNotSet, Converter={StaticResource BooleanToVisibilityConverter}}" />
+
+                                                        <Grid Visibility="{Binding CustomCommandSet, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                            <CommandsControls:CommandListingButtonsControl
+                                                                x:Name="CustomProductCommandButtons"
+                                                                DeleteClicked="CustomProductCommandButtons_DeleteClicked"
+                                                                EditClicked="CustomProductCommandButtons_EditClicked" />
+                                                        </Grid>
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+                                        <DataGridTemplateColumn Width="130" Header="{x:Static resx:Resources.Actions}">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" />
+                                                            <ColumnDefinition Width="10" />
+                                                            <ColumnDefinition Width="Auto" />
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <Controls:IconButton
+                                                            Grid.Column="0"
+                                                            HorizontalAlignment="Center"
+                                                            Command="{Binding EditProductCommand}"
+                                                            Icon="TooltipEdit"
+                                                            ToolTip="{x:Static resx:Resources.Edit}" />
+
+                                                        <Controls:IconButton
+                                                            Grid.Column="2"
+                                                            HorizontalAlignment="Center"
+                                                            Command="{Binding DeleteProductCommand}"
+                                                            Icon="Delete"
+                                                            ToolTip="{x:Static resx:Resources.Delete}" />
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </ScrollViewer>
+                        </Border>
+
+                        <Grid
+                            Grid.Row="2"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="40" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <Grid Grid.Column="0">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="20" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <Grid Grid.Row="0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="20" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBox
+                                        Grid.Column="0"
+                                        Width="250"
+                                        MaterialDesign:HintAssist.Hint="{x:Static resx:Resources.Name}"
+                                        Style="{StaticResource MaterialDesignFloatingHintTextBox}"
+                                        Text="{Binding ProductName}" />
+
+                                    <TextBox
+                                        Grid.Column="2"
+                                        Width="60"
+                                        MaterialDesign:HintAssist.Hint="{x:Static resx:Resources.Quantity}"
+                                        Style="{StaticResource MaterialDesignFloatingHintTextBox}"
+                                        Text="{Binding ProductQuantityString}" />
+                                </Grid>
+
+                                <Grid Grid.Row="2" HorizontalAlignment="Center">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="5" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="20" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="5" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock
+                                        Grid.Column="0"
+                                        Margin="0,5,0,0"
+                                        VerticalAlignment="Center"
+                                        Text="{x:Static resx:Resources.AutoReplenish}" />
+                                    <ToggleButton
+                                        Grid.Column="2"
+                                        Margin="0,5,0,0"
+                                        IsChecked="{Binding ProductAutoReplenish}" />
+
+                                    <TextBlock
+                                        Grid.Column="4"
+                                        Margin="0,5,0,0"
+                                        VerticalAlignment="Center"
+                                        Text="{x:Static resx:Resources.AutoRedeem}" />
+                                    <ToggleButton
+                                        Grid.Column="6"
+                                        Margin="0,5,0,0"
+                                        IsChecked="{Binding ProductAutoRedeem}" />
+                                </Grid>
+                            </Grid>
+
+                            <RequirementsControls:RequirementsSetControl
+                                Grid.Column="2"
+                                Width="300"
+                                DataContext="{Binding ProductRequirements}"
+                                ShowArguments="False"
+                                ShowSettings="False" />
+                        </Grid>
+
+                        <!--  Usage Requirements  -->
+
+                        <Button
+                            Grid.Row="4"
+                            Width="150"
+                            Command="{Binding SaveProductCommand}"
+                            Content="{x:Static resx:Resources.SaveProduct}" />
+                    </Grid>
+                </GroupBox>
+
+                <GroupBox Grid.Row="2" Header="{x:Static resx:Resources.Redemption}">
+                    <Grid HorizontalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="40" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="40" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <Grid Grid.Column="0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="20" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <TextBox
+                                Grid.Row="0"
+                                Width="150"
+                                VerticalAlignment="Center"
+                                MaterialDesign:HintAssist.Hint="{x:Static resx:Resources.ChatPurchaseCommand}"
+                                Style="{StaticResource MaterialDesignFloatingHintTextBox}"
+                                Text="{Binding ChatPurchaseCommand}" />
+
+                            <TextBox
+                                Grid.Row="2"
+                                Width="150"
+                                VerticalAlignment="Center"
+                                MaterialDesign:HintAssist.Hint="{x:Static resx:Resources.ModRedeemCommand}"
+                                Style="{StaticResource MaterialDesignFloatingHintTextBox}"
+                                Text="{Binding ModRedeemCommand}" />
+                        </Grid>
+
+                        <GroupBox
+                            Grid.Column="2"
+                            Width="180"
+                            HorizontalAlignment="Center"
+                            Header="{x:Static resx:Resources.ManualRedeemNeeded}">
+                            <CommandsControls:CommandListingButtonsControl
+                                x:Name="ManualRedeemNeededCommandButtons"
+                                HorizontalAlignment="Center"
+                                DataContext="{Binding ManualRedeemNeededCommand}"
+                                EditClicked="ManualRedeemNeededCommandButtons_EditClicked"
+                                HideDeleteButton="True"
+                                HideEnableDisableToggle="True" />
+                        </GroupBox>
+
+                        <GroupBox
+                            Grid.Column="4"
+                            Width="180"
+                            HorizontalAlignment="Center"
+                            Header="{x:Static resx:Resources.DefaultRedemption}">
+                            <CommandsControls:CommandListingButtonsControl
+                                x:Name="DefaultRedeemCommandButtons"
+                                HorizontalAlignment="Center"
+                                DataContext="{Binding DefaultRedemptionCommand}"
+                                EditClicked="DefaultRedeemCommandButtons_EditClicked"
+                                HideDeleteButton="True"
+                                HideEnableDisableToggle="True" />
+                        </GroupBox>
+                    </Grid>
+                </GroupBox>
+
+                <Controls:IconButton
+                    x:Name="SaveButton"
+                    Grid.Row="4"
+                    Width="80"
+                    HorizontalAlignment="Center"
+                    Click="SaveButton_Click"
+                    Icon="ContentSave" />
+            </Grid>
+        </ScrollViewer>
+
+        <Controls:LoadingStatusBar x:Name="StatusBar" Grid.Row="1" />
+    </Grid>
+</Windows:LoadingWindowBase>

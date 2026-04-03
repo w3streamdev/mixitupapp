@@ -1,0 +1,81 @@
+﻿using MixItUp.Base;
+using MixItUp.Base.Services;
+using MixItUp.Base.Util;
+using System;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace MixItUp.WPF.Services.DeveloperAPI
+{
+    public class WindowsDeveloperAPIService : IDeveloperAPIService
+    {
+        private WebApplication app;
+
+        public readonly string[] DeveloperAPIServerAddresses = new string[] { "http://localhost:8911" };
+        public readonly string[] AdvancedDeveloperAPIServerAddresses = new string[] { "http://*:8911" };
+
+        public string Name { get { return "Developer API"; } }
+
+        public bool IsConnected { get; private set; }
+
+        public async Task<Result> Connect()
+        {
+            await this.Disconnect();
+
+            var builder = WebApplication.CreateBuilder(Array.Empty<string>());
+
+            string[] urls;
+            if (ChannelSession.IsElevated && ChannelSession.Settings.EnableDeveloperAPIAdvancedMode)
+            {
+                urls = AdvancedDeveloperAPIServerAddresses;
+            }
+            else
+            {
+                urls = DeveloperAPIServerAddresses;
+            }
+
+            builder.WebHost.UseUrls(urls);
+
+            builder.Services.AddControllers(options =>
+                {
+                    options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true;
+                    options.AllowEmptyInputInBodyModelBinding = true;
+                })
+                .AddApplicationPart(typeof(WindowsDeveloperAPIService).Assembly)
+                .AddJsonOptions(options =>
+                {
+                    options.JsonSerializerOptions.PropertyNamingPolicy = null;
+                    options.JsonSerializerOptions.AllowTrailingCommas = true;
+                });
+
+            this.app = builder.Build();
+
+            app.UseMiddleware<NoCacheHeaderMiddleware>();
+            app.UseRouting();
+            app.MapControllers();
+
+            _ = this.app.RunAsync();
+
+            await Task.Delay(100);
+
+            this.IsConnected = true;
+
+            ServiceManager.Get<ITelemetryService>().TrackService("Developer API");
+
+            return new Result();
+        }
+
+        public async Task Disconnect()
+        {
+            if (this.app != null)
+            {
+                await this.app.StopAsync();
+                await this.app.DisposeAsync();
+                this.app = null;
+            }
+            this.IsConnected = false;
+        }
+    }
+}
