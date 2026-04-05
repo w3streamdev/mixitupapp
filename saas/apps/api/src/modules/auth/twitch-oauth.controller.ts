@@ -326,19 +326,21 @@ export class TwitchOAuthController {
       const token = `${header}.${payload}.dev`;
 
       // ── Redirect to frontend with token ───────────────────────────────
-      if (redirectUri) {
-        const targetUrl = `${redirectUri}#token=${token}`;
-        this.logger.log(`Redirecting to frontend: ${redirectUri}`);
+      const targetRedirect = redirectUri ?? (process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/dashboard` : "");
+      if (targetRedirect) {
+        const targetUrl = `${targetRedirect}#token=${token}`;
+        this.logger.log(`Redirecting to: ${targetRedirect}`);
         void reply.status(302).redirect(targetUrl);
       } else {
-        // Backward compat: show success HTML if no redirect_uri
+        // Fallback: show success HTML with token for manual copy
         void reply.status(200).type("text/html").send(`<!DOCTYPE html>
 <html>
-<head><title>w3StreamItUp - Twitch Connected</title></head>
-<body style="font-family: sans-serif; text-align: center; padding: 60px;">
-  <h1>Twitch Connected Successfully!</h1>
+<head><title>w3StreamItUp - Connected</title></head>
+<body style="font-family: sans-serif; text-align: center; padding: 60px; background: #0f172a; color: #e2e8f0;">
+  <h1 style="color: #a78bfa;">Twitch Connected!</h1>
   <p>Account: <strong>${displayName}</strong> (${username})</p>
-  <p>You can close this window.</p>
+  <p>Tenant: <strong>${tenantId}</strong></p>
+  <p style="margin-top: 20px; font-size: 12px; color: #94a3b8;">Your token has been generated. You can close this window.</p>
 </body>
 </html>`);
       }
